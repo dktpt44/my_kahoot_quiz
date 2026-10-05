@@ -9,7 +9,7 @@ export default function Results({ view }: { view: HostGameView }) {
       <div className="relative z-10">
         <StatPill accent="amber">✦ &nbsp; Game complete</StatPill>
         <h1 className="mt-5 text-4xl font-extrabold tracking-[-.055em] sm:text-6xl">Session <span className="gradient-text">complete.</span></h1>
-        <p className="text-muted mt-4">{view.quiz.name} · {view.quiz.questions.length} questions played</p>
+        <p className="text-muted mt-4">{view.quizName} · {view.questionCount} questions played</p>
         {winner && <div className="winner-card glass-soft mx-auto mt-9 max-w-md px-6 py-7">
           <div className="winner-crown" aria-hidden="true">✦</div>
           <p className="eyebrow mt-3">Top scorer</p>

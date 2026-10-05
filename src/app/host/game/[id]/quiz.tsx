@@ -6,19 +6,19 @@ import type { HostGameView } from '@/types/game'
 const symbols = ['◆', '●', '▲', '■']
 
 export default function Quiz({ view, onAction }: { view: HostGameView; onAction: (action: string) => void }) {
-  const question = view.quiz.questions[view.questionIndex]
+  const question = view.question!
   const elapsed = view.serverNow - (view.questionStartedAt ?? view.serverNow)
   const choicesVisible = elapsed >= TIME_TIL_CHOICE_REVEAL || view.isAnswerRevealed
   const secondsLeft = Math.max(0, Math.ceil((TIME_TIL_CHOICE_REVEAL + QUESTION_ANSWER_TIME - elapsed) / 1000))
   const timerPercent = Math.max(0, Math.min(100, (TIME_TIL_CHOICE_REVEAL + QUESTION_ANSWER_TIME - elapsed) / (TIME_TIL_CHOICE_REVEAL + QUESTION_ANSWER_TIME) * 100))
   const answerPercent = view.participants.length ? view.answers.length / view.participants.length * 100 : 0
-  const questionPercent = (view.questionIndex + 1) / view.quiz.questions.length * 100
+  const questionPercent = (view.questionIndex + 1) / view.questionCount * 100
 
   return <div className="container-game pb-16">
     <div className="mb-7 animate-in">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <div><p className="eyebrow">Live question</p><h1 className="mt-2 text-2xl font-bold tracking-tight sm:text-3xl">{view.quiz.name}</h1></div>
-        <StatPill accent={view.isAnswerRevealed ? 'mint' : 'violet'}>{view.isAnswerRevealed ? 'Answer revealed' : `Question ${view.questionIndex + 1} of ${view.quiz.questions.length}`}</StatPill>
+        <div><p className="eyebrow">Live question</p><h1 className="mt-2 text-2xl font-bold tracking-tight sm:text-3xl">{view.quizName}</h1></div>
+        <StatPill accent={view.isAnswerRevealed ? 'mint' : 'violet'}>{view.isAnswerRevealed ? 'Answer revealed' : `Question ${view.questionIndex + 1} of ${view.questionCount}`}</StatPill>
       </div>
       <ProgressBar className="mt-5" value={questionPercent} />
     </div>
@@ -64,7 +64,7 @@ export default function Quiz({ view, onAction }: { view: HostGameView; onAction:
           <ProgressBar className="mt-3" value={answerPercent} />
           <p className="text-muted mt-3 text-xs">{view.isAnswerRevealed ? 'Ready for the next question.' : 'Updates live as players respond.'}</p>
           <div className="rule my-7" />
-          {view.isAnswerRevealed ? <button className="btn-primary w-full" onClick={() => onAction('next')}>{view.questionIndex + 1 === view.quiz.questions.length ? 'See results' : 'Next question'} <ArrowIcon /></button>
+          {view.isAnswerRevealed ? <button className="btn-primary w-full" onClick={() => onAction('next')}>{view.questionIndex + 1 === view.questionCount ? 'See results' : 'Next question'} <ArrowIcon /></button>
             : <button className="btn-secondary w-full" onClick={() => onAction('reveal')}>Reveal answer now</button>}
         </aside>
       </Delay>

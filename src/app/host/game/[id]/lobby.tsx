@@ -1,7 +1,13 @@
 import type { Participant } from '@/types/game'
 import { ArrowIcon, Delay, StatPill } from '@/components/ui'
 import { useQRCode } from 'next-qrcode'
-import { useRef, useState } from 'react'
+import { memo, useRef, useState } from 'react'
+
+const qrOptions = { errorCorrectionLevel: 'M' as const, margin: 2, width: 320 }
+const JoinCode = memo(function JoinCode({ url }: { url: string }) {
+  const { Canvas } = useQRCode()
+  return <Canvas text={url} options={qrOptions} />
+})
 
 function canScan(url: string): boolean {
   try {
@@ -16,7 +22,6 @@ function canScan(url: string): boolean {
 export default function Lobby({ participants, gameId, quizName, defaultJoinUrl, onStart }: {
   participants: Participant[]; gameId: string; quizName: string; defaultJoinUrl: string | null; onStart: () => void
 }) {
-  const { Canvas } = useQRCode()
   const [joinUrl, setJoinUrl] = useState(defaultJoinUrl ?? '')
   const [copied, setCopied] = useState(false)
   const [copyHint, setCopyHint] = useState('')
@@ -82,7 +87,7 @@ export default function Lobby({ participants, gameId, quizName, defaultJoinUrl, 
           <p className="eyebrow">Invite your players</p>
           <h2 id="share-title" className="mt-2 text-2xl font-bold">Scan to join</h2>
           <div className="qr-frame mx-auto mt-6 flex aspect-square w-full max-w-[360px] items-center justify-center p-4">
-            {qrUrl ? <Canvas text={qrUrl} options={{ errorCorrectionLevel: 'M', margin: 2, width: 320 }} />
+            {qrUrl ? <JoinCode url={qrUrl} />
               : <p className="max-w-56 text-center text-sm font-semibold text-slate-700">Enter a network address below to generate the QR code.</p>}
           </div>
           <label className="mt-6 block">

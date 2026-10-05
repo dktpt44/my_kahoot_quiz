@@ -3,6 +3,7 @@
 import Link from 'next/link'
 import { use, useEffect, useState } from 'react'
 import { Brand, StatPill } from '@/components/ui'
+import { useGameView } from '@/lib/use-game-view'
 import type { HostGameView } from '@/types/game'
 import Lobby from './lobby'
 import Quiz from './quiz'
@@ -10,9 +11,8 @@ import Results from './results'
 
 export default function HostGame({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params)
-  const [view, setView] = useState<HostGameView | null>(null)
   const [hostToken, setHostToken] = useState('')
-  const [error, setError] = useState('')
+  const { view, applyView, error, setError, now } = useGameView<HostGameView>(id, 'host', hostToken)
 
   useEffect(() => {
     const savedToken = localStorage.getItem(`host:${id}`) ?? ''
@@ -21,20 +21,7 @@ export default function HostGame({ params }: { params: Promise<{ id: string }> }
       setError('Host access is only available in the browser that created this game.')
       return
     }
-    let active = true
-    const refresh = async () => {
-      try {
-        const response = await fetch(`/api/games/${id}`, { headers: { 'x-host-token': savedToken }, cache: 'no-store' })
-        if (!response.ok) throw new Error(response.status === 404 ? 'Game not found. The server may have restarted.' : 'Could not load game')
-        if (active) { setView(await response.json()); setError('') }
-      } catch (cause) {
-        if (active) setError(cause instanceof Error ? cause.message : 'Could not load game')
-      }
-    }
-    refresh()
-    const interval = setInterval(refresh, 750)
-    return () => { active = false; clearInterval(interval) }
-  }, [id])
+  }, [id, setError])
 
   const act = async (action: string) => {
     try {
@@ -44,7 +31,8 @@ export default function HostGame({ params }: { params: Promise<{ id: string }> }
       })
       const result = await response.json()
       if (!response.ok) throw new Error(result.error)
-      setView(result)
+      applyView(result)
+      setError('')
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : 'Could not update game')
     }
@@ -64,8 +52,8 @@ export default function HostGame({ params }: { params: Promise<{ id: string }> }
         <div className="flex gap-2"><span className="loading-dot" /><span className="loading-dot" /><span className="loading-dot" /></div>
         <p className="text-muted">Preparing your room...</p>
       </div>}
-      {view?.phase === 'lobby' && <Lobby participants={view.participants} gameId={id} quizName={view.quiz.name} defaultJoinUrl={view.joinUrl} onStart={() => act('start')} />}
-      {view?.phase === 'quiz' && <Quiz view={view} onAction={act} />}
+      {view?.phase === 'lobby' && <Lobby participants={view.participants} gameId={id} quizName={view.quizName} defaultJoinUrl={view.joinUrl} onStart={() => act('start')} />}
+      {view?.phase === 'quiz' && <Quiz view={{ ...view, serverNow: now }} onAction={act} />}
       {view?.phase === 'result' && <Results view={view} />}
     </div>
   </main>

@@ -2,6 +2,7 @@
 
 import { use, useEffect, useState } from 'react'
 import { Brand, StatPill } from '@/components/ui'
+import { useGameView } from '@/lib/use-game-view'
 import type { PlayerGameView } from '@/types/game'
 import Lobby from './lobby'
 import Quiz from './quiz'
@@ -12,9 +13,8 @@ type PendingChoice = { questionId: string; choiceId: string }
 export default function PlayerGame({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params)
   const [player, setPlayer] = useState<PlayerCredential | null>(null)
-  const [view, setView] = useState<PlayerGameView | null>(null)
   const [pendingChoice, setPendingChoice] = useState<PendingChoice | null>(null)
-  const [error, setError] = useState('')
+  const { view, setView, error, setError, now } = useGameView<PlayerGameView>(id, 'player', player?.token, player?.id)
 
   useEffect(() => {
     const saved = localStorage.getItem(`player:${id}`)
@@ -22,32 +22,6 @@ export default function PlayerGame({ params }: { params: Promise<{ id: string }>
       try { setPlayer(JSON.parse(saved)) } catch { localStorage.removeItem(`player:${id}`) }
     }
   }, [id])
-
-  useEffect(() => {
-    let active = true
-    let timer: ReturnType<typeof setTimeout>
-    let controller: AbortController
-    const refresh = async () => {
-      controller = new AbortController()
-      const timeout = setTimeout(() => controller.abort(), 8000)
-      try {
-        const headers: Record<string, string> = player
-          ? { 'x-player-id': player.id, 'x-player-token': player.token } : {}
-        const response = await fetch(`/api/games/${id}`, { headers, cache: 'no-store', signal: controller.signal })
-        if (!response.ok) throw new Error(response.status === 404 ? 'Game not found. The server may have restarted.' : 'Could not load game')
-        if (active) { setView(await response.json()); setError('') }
-      } catch (cause) {
-        if (active) setError(cause instanceof Error && cause.name === 'AbortError'
-          ? 'The room is taking too long to respond. Retrying...'
-          : cause instanceof Error ? cause.message : 'Could not load game')
-      } finally {
-        clearTimeout(timeout)
-        if (active) timer = setTimeout(refresh, 750)
-      }
-    }
-    refresh()
-    return () => { active = false; clearTimeout(timer); controller.abort() }
-  }, [id, player])
 
   const register = (credential: PlayerCredential) => {
     localStorage.setItem(`player:${id}`, JSON.stringify(credential))
@@ -96,7 +70,7 @@ export default function PlayerGame({ params }: { params: Promise<{ id: string }>
           <div className="glass-soft mt-8 p-4 text-sm text-[#d6def5]">{view.quizName} <span className="text-muted mx-2">·</span> Waiting room</div>
         </section>
       </div>}
-      {player && view?.phase === 'quiz' && view.question && <Quiz view={view} selectedChoiceId={selectedChoiceId} onAnswer={answer} />}
+      {player && view?.phase === 'quiz' && view.question && <Quiz view={{ ...view, serverNow: now }} selectedChoiceId={selectedChoiceId} onAnswer={answer} />}
       {player && view?.phase === 'result' && <div className="container-game flex min-h-[72vh] items-center justify-center pb-16">
         <section className="glass w-full max-w-xl px-7 py-12 text-center animate-in sm:px-12">
           <div className="winner-crown mx-auto" aria-hidden="true">✦</div>

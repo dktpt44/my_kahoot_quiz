@@ -8,8 +8,10 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value)
 }
 
-export async function loadQuizzes(): Promise<QuizSet[]> {
-  return Promise.all(quizPaths.map(async (file) => {
+let cachedQuizzes: Promise<QuizSet[]> | null = null
+
+export function loadQuizzes(): Promise<QuizSet[]> {
+  return cachedQuizzes ??= Promise.all(quizPaths.map(async (file) => {
     if (!/^data\/(networks|os|aml|cvpr)\/[a-zA-Z0-9_-]+\.json$/.test(file)) {
       throw new Error(`Invalid quiz path in config.js: ${file}`)
     }
