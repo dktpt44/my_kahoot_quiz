@@ -1,0 +1,24 @@
+{
+  "name": "Networks Demo",
+  "description": "A short introduction to computer networks",
+  "questions": [
+    {
+      "body": "Which protocol translates a domain name into an IP address?",
+      "choices": [
+        { "body": "DNS", "is_correct": true },
+        { "body": "HTTP", "is_correct": false },
+        { "body": "SSH", "is_correct": false },
+        { "body": "SMTP", "is_correct": false }
+      ]
+    },
+    {
+      "body": "Which device forwards packets between different networks?",
+      "choices": [
+        { "body": "Router", "is_correct": true },
+        { "body": "Monitor", "is_correct": false },
+        { "body": "Keyboard", "is_correct": false },
+        { "body": "Printer", "is_correct": false }
+      ]
+    }
+  ]
+}
