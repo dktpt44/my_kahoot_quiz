@@ -1,5 +1,5 @@
-import type { CSSProperties } from 'react'
 import { QUESTION_ANSWER_TIME, TIME_TIL_CHOICE_REVEAL } from '@/constants'
+import { CountdownRing } from '@/components/countdown'
 import { ArrowIcon, Delay, ProgressBar, StatPill } from '@/components/ui'
 import type { HostGameView } from '@/types/game'
 
@@ -10,7 +10,6 @@ export default function Quiz({ view, onAction }: { view: HostGameView; onAction:
   const elapsed = view.serverNow - (view.questionStartedAt ?? view.serverNow)
   const choicesVisible = elapsed >= TIME_TIL_CHOICE_REVEAL || view.isAnswerRevealed
   const secondsLeft = Math.max(0, Math.ceil((TIME_TIL_CHOICE_REVEAL + QUESTION_ANSWER_TIME - elapsed) / 1000))
-  const timerPercent = Math.max(0, Math.min(100, (TIME_TIL_CHOICE_REVEAL + QUESTION_ANSWER_TIME - elapsed) / (TIME_TIL_CHOICE_REVEAL + QUESTION_ANSWER_TIME) * 100))
   const answerPercent = view.participants.length ? view.answers.length / view.participants.length * 100 : 0
   const questionPercent = (view.questionIndex + 1) / view.questionCount * 100
 
@@ -53,18 +52,16 @@ export default function Quiz({ view, onAction }: { view: HostGameView; onAction:
         <aside className="glass p-6 sm:p-7" aria-label="Question status">
           <p className="eyebrow">Round pulse</p>
           <div className="mt-7 flex justify-center">
-            <div className="timer-ring" style={{ '--progress': `${timerPercent}%` } as CSSProperties}>
-              <div className="timer-ring-inner">
-                <div className="text-center"><div className="text-4xl font-extrabold tabular-nums">{view.isAnswerRevealed ? '✓' : secondsLeft}</div><div className="text-muted text-xs font-bold uppercase tracking-widest">{view.isAnswerRevealed ? 'done' : 'seconds'}</div></div>
-              </div>
-            </div>
+            <CountdownRing key={question.id} elapsedMs={elapsed} durationMs={TIME_TIL_CHOICE_REVEAL + QUESTION_ANSWER_TIME} paused={view.isAnswerRevealed}>
+              <div className="text-center"><div className="text-4xl font-extrabold tabular-nums">{view.isAnswerRevealed ? '✓' : secondsLeft}</div><div className="text-muted text-xs font-bold uppercase tracking-widest">{view.isAnswerRevealed ? 'done' : 'seconds'}</div></div>
+            </CountdownRing>
           </div>
           <div className="rule my-7" />
           <div className="flex items-end justify-between"><span className="text-muted text-sm">Answers in</span><strong className="text-2xl tabular-nums">{view.answers.length}<span className="text-muted text-base">/{view.participants.length}</span></strong></div>
           <ProgressBar className="mt-3" value={answerPercent} />
           <p className="text-muted mt-3 text-xs">{view.isAnswerRevealed ? 'Ready for the next question.' : 'Updates live as players respond.'}</p>
           <div className="rule my-7" />
-          {view.isAnswerRevealed ? <button className="btn-primary w-full" onClick={() => onAction('next')}>{view.questionIndex + 1 === view.questionCount ? 'See results' : 'Next question'} <ArrowIcon /></button>
+          {view.isAnswerRevealed ? <button className="btn-primary btn-success w-full" onClick={() => onAction('next')}>{view.questionIndex + 1 === view.questionCount ? 'See results' : 'Next question'} <ArrowIcon /></button>
             : <button className="btn-secondary w-full" onClick={() => onAction('reveal')}>Reveal answer now</button>}
         </aside>
       </Delay>

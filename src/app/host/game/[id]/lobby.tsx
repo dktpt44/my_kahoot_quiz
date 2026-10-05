@@ -77,7 +77,7 @@ export default function Lobby({ participants, gameId, quizName, defaultJoinUrl, 
           <div className="rule my-6" />
           <div className="flex flex-wrap items-center justify-between gap-4">
             <p className="text-muted text-sm">You can start with any number of players.</p>
-            <button className="btn-primary min-w-44" onClick={onStart}>Start the game <ArrowIcon /></button>
+            <button className="btn-primary btn-success min-w-44" onClick={onStart}>Start the game <ArrowIcon /></button>
           </div>
         </section>
       </Delay>

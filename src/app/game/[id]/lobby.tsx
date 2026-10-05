@@ -40,7 +40,7 @@ export default function Lobby({ gameId, onRegistered }: {
           onChange={(event) => setNickname(event.target.value)} placeholder="What should we call you?" maxLength={20} required autoComplete="nickname" />
         <p className="text-muted mt-2 text-xs">Up to 20 characters. Make it yours.</p>
         {error && <p role="alert" className="notice mt-5 text-sm">{error}</p>}
-        <button disabled={sending} className="btn-primary mt-7 w-full py-4">{sending ? 'Joining room...' : 'Join the game'} <ArrowIcon /></button>
+        <button disabled={sending} className="btn-primary btn-success mt-7 w-full py-4">{sending ? 'Joining room...' : 'Join the game'} <ArrowIcon /></button>
       </form>
       <p className="text-muted mt-5 text-center text-xs">The host will start once everyone is here.</p>
     </div>
