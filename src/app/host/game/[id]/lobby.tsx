@@ -83,7 +83,7 @@ export default function Lobby({ participants, gameId, quizName, defaultJoinUrl, 
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
               <p className="eyebrow">The room</p>
-              <h2 id="players-title" className="mt-2 text-2xl font-bold">Players joining</h2>
+              <h2 id="players-title" className="mt-2 text-2xl font-bold">Participants joining</h2>
             </div>
             <StatPill accent="cyan">{participants.length} {participants.length === 1 ? 'player' : 'players'}</StatPill>
           </div>
@@ -104,22 +104,22 @@ export default function Lobby({ participants, gameId, quizName, defaultJoinUrl, 
           </div>}
           <div className="rule my-6" />
           <div className="flex flex-wrap items-center justify-between gap-4">
-            <p className="text-muted text-sm">You can start with any number of players.</p>
-            <button className="btn-primary btn-success min-w-44" onClick={onStart}>Start the game <ArrowIcon /></button>
+            <p className="text-muted text-sm">You can start with any number of participants.</p>
+            <button className="btn-primary btn-success min-w-44" onClick={onStart}>Start the quiz <ArrowIcon /></button>
           </div>
         </section>
       </Delay>
 
       <Delay index={2}>
         <section className="glass h-full p-6 sm:p-7" aria-labelledby="share-title">
-          <p className="eyebrow">Invite your players</p>
+          <p className="eyebrow">Invite your participants</p>
           <h2 id="share-title" className="mt-2 text-2xl font-bold">Scan to join</h2>
           <div className="qr-frame mx-auto mt-6 flex aspect-square w-full max-w-[360px] items-center justify-center p-4">
             {qrUrl ? <JoinCode url={qrUrl} />
               : <p className="max-w-56 text-center text-sm font-semibold text-slate-700">Enter a network address below to generate the QR code.</p>}
           </div>
           <label className="mt-6 block">
-            <span className="label">Player link</span>
+            <span className="label">Participant link</span>
             <input ref={linkInput} className="field text-sm" value={joinUrl} onChange={(event) => { setJoinUrl(event.target.value); setCopied(false); setCopyHint('') }} aria-label="Player join URL" />
           </label>
           <p className="text-muted mt-2 text-xs">This uses your computer’s network address. Phones must be on the same network.</p>

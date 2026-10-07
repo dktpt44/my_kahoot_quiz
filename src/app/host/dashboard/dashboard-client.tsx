@@ -119,19 +119,17 @@ export default function DashboardClient({ quizzes, categories }: { quizzes: Quiz
       <div className="dashboard-greeting">
         <p className="eyebrow">Admin dashboard</p>
         <h1 className="mt-3 text-4xl font-extrabold tracking-[-.05em] sm:text-5xl">Welcome, <span className="gradient-text">admin.</span></h1>
-        <p className="text-muted mt-4 max-w-lg leading-relaxed">Choose a category and quiz to open a room and invite your players.</p>
-      </div>
-      <div className="dashboard-stats">
-        <div className="dashboard-stat dashboard-stat-categories">
-          <span className="dashboard-stat-label">Categories</span>
-          <strong className="dashboard-stat-number">{categories.length}</strong>
-          <span className="text-muted text-sm">Folders in data</span>
+        <div className="dashboard-stats">
+          <div className="dashboard-stat dashboard-stat-categories">
+            <strong className="dashboard-stat-number">{categories.length}</strong>
+            <span className="dashboard-stat-label">Categories</span>
+          </div>
+          <div className="dashboard-stat dashboard-stat-quizzes">
+            <strong className="dashboard-stat-number">{quizzes.length}</strong>
+            <span className="dashboard-stat-label">Quizzes</span>
+          </div>
         </div>
-        <div className="dashboard-stat dashboard-stat-quizzes">
-          <span className="dashboard-stat-label">Quizzes</span>
-          <strong className="dashboard-stat-number">{quizzes.length}</strong>
-          <span className="text-muted text-sm">Ready to host</span>
-        </div>
+        <p className="text-muted mt-5 max-w-lg leading-relaxed">Choose a category and quiz to open a room and invite your players.</p>
       </div>
     </section>
 

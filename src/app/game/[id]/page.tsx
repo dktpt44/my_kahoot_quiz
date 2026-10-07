@@ -74,7 +74,7 @@ export default function PlayerGame({ params }: { params: Promise<{ id: string }>
           <div className="waiting-orbit mx-auto mb-8" aria-hidden="true"><span /></div>
           <p className="eyebrow">You’re in</p>
           <h1 className="mt-3 text-3xl font-extrabold tracking-tight sm:text-4xl">Welcome, <span className="gradient-text">{player.nickname}.</span></h1>
-          <p className="text-muted mt-4">The host will start the game in a moment. Keep this screen open.</p>
+          <p className="text-muted mt-4">The host will start the quiz in a moment. Keep this screen open.</p>
           <div className="glass-soft mt-8 p-4 text-sm text-[#d6def5]">{view.quizName} <span className="text-muted mx-2">·</span> Waiting room</div>
         </section>
       </div>}

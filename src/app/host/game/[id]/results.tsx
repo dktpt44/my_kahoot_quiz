@@ -24,7 +24,7 @@ export default function Results({ view, onReturnHome, closing }: { view: HostGam
     <section className="mt-10" aria-labelledby="leaderboard-title">
       <div className="mb-5 flex flex-wrap items-end justify-between gap-3">
         <div><p className="eyebrow">The final standings</p><h2 id="leaderboard-title" className="mt-2 text-2xl font-bold">Leaderboard</h2></div>
-        <StatPill accent="cyan">{view.results.length} players</StatPill>
+        <StatPill accent="cyan">{view.results.length} participants</StatPill>
       </div>
       {view.results.length ? <ol className="space-y-3">
         {view.results.map((result, index) => <Delay key={result.id} index={index}>
@@ -34,7 +34,7 @@ export default function Results({ view, onReturnHome, closing }: { view: HostGam
             <span className="font-extrabold tabular-nums text-[#cbbdff]">{result.totalScore} <span className="text-muted text-xs font-medium">pts</span></span>
           </li>
         </Delay>)}
-      </ol> : <div className="glass p-8 text-center text-muted">No players joined this game.</div>}
+      </ol> : <div className="glass p-8 text-center text-muted">No participants joined this game.</div>}
     </section>
   </div>
 }
