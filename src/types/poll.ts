@@ -5,6 +5,7 @@ export type PlayerPollView = {
   id: string
   revision: number
   phase: PollPhase
+  endedAutomatically: boolean
   question: string
   type: 'multiple_choice'
   options: PollOption[]

@@ -28,6 +28,7 @@ Each quiz file needs:
 - `name` (string) and an optional `description` (string).
 - A nonempty `questions` array. Each question has a `body` and 2–4 `choices`.
 - Each choice has a `body` and `is_correct` boolean. Exactly one choice per question must be correct.
+- Choice order is shuffled once for each hosted room, so the host and all players see the same randomized order.
 
 Open **Instructions** on the dashboard for a copyable two-question JSON template. Refresh Home after adding or editing quizzes; no rebuild or server restart is needed for data changes.
 
@@ -36,6 +37,7 @@ Open **Instructions** on the dashboard for a copyable two-question JSON template
 - Select **Settings** in the admin navigation to set the choice reveal delay (0–20 seconds, default 5) and answer time (10–100 seconds, default 20).
 - Select **Save settings** to persist them in `.quiz-settings.json`. This local file is ignored by Git.
 - Changes apply to newly hosted rooms. A room keeps the timing it had when it was created.
+- Quiz and poll rooms close automatically one hour after creation. A quiz displays a closure message; a poll ends voting and displays its results.
 
 ## Host a game
 
@@ -50,17 +52,22 @@ Open **Instructions** on the dashboard for a copyable two-question JSON template
 - Participants select one option and submit. The host sees the response count and option chart update live.
 - **End poll** stops new votes and shows results on participant screens. Then **Close and go home** or **Modify poll** to use the same question and options as a new draft.
 - One submission is allowed per browser per poll. The anonymous browser cookie works across polls, so voting in one poll does not prevent voting in another. Without participant accounts, clearing cookies or using another browser can allow another submission.
-- Polls and responses live in server memory and are lost on restart. Ended polls remain available for one hour; closed polls remain available to participants for ten minutes.
+- Polls and responses live in server memory and are lost on restart. Ended poll results remain available for one hour; polls closed by the host remain available to participants for ten minutes.
 
 ## Network, security, and sessions
 
 - By default, hosting through localhost generates player links and QR codes with a LAN IPv4 address. Players must be on the same network, with the server port reachable.
 - If the selected address is wrong, edit the player link in the lobby or set `QUIZ_JOIN_HOST`, for example: `QUIZ_JOIN_HOST=192.168.1.25 npm run start`.
+- For a public deployment, set `QUIZ_PUBLIC_ORIGIN=https://your-domain.example` to generate public QR links. Koyeb deployments use `KOYEB_PUBLIC_DOMAIN` automatically unless you set this override.
 - Use local HTTP only on a trusted network. Use HTTPS if the admin signs in over an untrusted network; HTTP does not encrypt the password.
 - Admin sessions last seven days. **Sign out** on the dashboard. Restarting after a password change invalidates existing sessions.
 - Keep `QUIZ_ADMIN_PASSWORD` on the server; do not use a `NEXT_PUBLIC_` prefix.
-- Run one persistent server instance. Games and polls live in memory, so restarting ends them. Idle rooms expire after six hours without a connected client or request.
+- Run one persistent server instance. Games and polls live in memory, so restarting ends them. Active rooms close after one hour even if nobody is connected.
 - The host token stays in the browser that created the room; use that browser to host the game.
+
+## Cloud demo
+
+See the [Koyeb deployment guide](docs/cloud-deployment.md) for a step-by-step free demo setup and its limits.
 
 ## Checks
 

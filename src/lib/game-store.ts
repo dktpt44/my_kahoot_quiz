@@ -9,7 +9,8 @@ type StoredGame = {
   id: string
   revision: number
   lastAccessedAt: number
-  cancelledAt: number | null
+  closedAt: number | null
+  expiresAt: number
   joinUrl: string | null
   hostToken: string
   quiz: QuizSet
@@ -24,31 +25,75 @@ type StoredGame = {
   answersByQuestion: Map<string, Map<string, Answer>>
   subscribers: Set<(audience: GameAudience) => void>
   revealTimer: ReturnType<typeof setTimeout> | null
+  expiryTimer: ReturnType<typeof setTimeout> | null
 }
 
 const globalGames = globalThis as typeof globalThis & { quizGames?: Map<string, StoredGame> }
 const games = globalGames.quizGames ??= new Map<string, StoredGame>()
 const token = () => randomBytes(32).toString('hex')
-const GAME_IDLE_TTL_MS = 6 * 60 * 60 * 1000
-const CANCELLED_TTL_MS = 10 * 60 * 1000
+const GAME_MAX_AGE_MS = 60 * 60 * 1000
+const CLOSED_TTL_MS = 10 * 60 * 1000
 
 function isExpired(game: StoredGame, now: number) {
-  return game.cancelledAt != null
-    ? now - game.cancelledAt > CANCELLED_TTL_MS
-    : game.subscribers.size === 0 && now - game.lastAccessedAt > GAME_IDLE_TTL_MS
+  return game.closedAt != null && now - game.closedAt > CLOSED_TTL_MS
 }
 
 function ensureRealtimeState(game: StoredGame) {
   game.subscribers ??= new Set()
   game.revealTimer ??= null
+  game.expiryTimer ??= null
+  game.closedAt ??= null
+  game.expiresAt ??= game.lastAccessedAt + GAME_MAX_AGE_MS
+}
+
+function clearExpiryTimer(game: StoredGame) {
+  if (game.expiryTimer) clearTimeout(game.expiryTimer)
+  game.expiryTimer = null
+}
+
+function expireGameIfDue(game: StoredGame, now = Date.now()) {
+  if (game.closedAt !== null || now < game.expiresAt) return
+  clearRevealTimer(game)
+  clearExpiryTimer(game)
+  game.phase = 'expired'
+  game.closedAt = now
+  game.revision += 1
+  publishGame(game, 'all')
+}
+
+function scheduleExpiry(game: StoredGame) {
+  if (game.expiryTimer || game.closedAt !== null) return
+  game.expiryTimer = setTimeout(() => {
+    game.expiryTimer = null
+    expireGameIfDue(game)
+  }, Math.max(0, game.expiresAt - Date.now()))
+  game.expiryTimer.unref()
+}
+
+function shuffledQuiz(quiz: QuizSet): QuizSet {
+  return {
+    ...quiz,
+    questions: quiz.questions.map((question) => {
+      const choices = [...question.choices]
+      for (let index = choices.length - 1; index > 0; index -= 1) {
+        const randomIndex = randomInt(index + 1)
+        const selected = choices[index]
+        choices[index] = choices[randomIndex]
+        choices[randomIndex] = selected
+      }
+      return { ...question, choices }
+    }),
+  }
 }
 
 export function createGame(quiz: QuizSet, origin: string | null, settings: QuizSettings) {
   const now = Date.now()
   for (const [id, game] of games) {
     ensureRealtimeState(game)
+    expireGameIfDue(game, now)
     if (isExpired(game, now)) {
       clearRevealTimer(game)
+      clearExpiryTimer(game)
       games.delete(id)
     }
   }
@@ -64,14 +109,16 @@ export function createGame(quiz: QuizSet, origin: string | null, settings: QuizS
   if (!id) throw new Error('No game codes are available')
 
   const game: StoredGame = {
-    id, revision: 1, lastAccessedAt: now, cancelledAt: null, joinUrl: origin ? `${origin}/game/${id}` : null,
-    hostToken: token(), quiz, choiceRevealMs: settings.choiceRevealSeconds * 1000,
+    id, revision: 1, lastAccessedAt: now, closedAt: null, expiresAt: now + GAME_MAX_AGE_MS,
+    joinUrl: origin ? `${origin}/game/${id}` : null,
+    hostToken: token(), quiz: shuffledQuiz(quiz), choiceRevealMs: settings.choiceRevealSeconds * 1000,
     answerTimeMs: settings.answerTimeSeconds * 1000, phase: 'lobby',
     questionIndex: 0, questionStartedAt: null, isAnswerRevealed: false,
     players: [], answers: [], answersByQuestion: new Map(),
-    subscribers: new Set(), revealTimer: null,
+    subscribers: new Set(), revealTimer: null, expiryTimer: null,
   }
   games.set(game.id, game)
+  scheduleExpiry(game)
   return { id: game.id, hostToken: game.hostToken }
 }
 
@@ -80,14 +127,17 @@ export function getGame(id: string) {
   if (!game) return undefined
   ensureRealtimeState(game)
   const now = Date.now()
+  expireGameIfDue(game, now)
   if (isExpired(game, now)) {
     clearRevealTimer(game)
+    clearExpiryTimer(game)
     games.delete(id)
     return undefined
   }
-  if (game.cancelledAt == null) game.lastAccessedAt = now
+  if (game.closedAt == null) game.lastAccessedAt = now
   updateTimedState(game)
   if (game.phase === 'quiz' && !game.isAnswerRevealed && !game.revealTimer) scheduleReveal(game)
+  scheduleExpiry(game)
   return game
 }
 
@@ -141,23 +191,28 @@ export function isHost(game: StoredGame, hostToken: string | null) {
 }
 
 export function closeGame(game: StoredGame) {
+  expireGameIfDue(game)
   if (game.phase !== 'result') throw new Error('This session has not finished yet')
   clearRevealTimer(game)
+  clearExpiryTimer(game)
   game.subscribers.clear()
   games.delete(game.id)
 }
 
 export function cancelGame(game: StoredGame) {
+  expireGameIfDue(game)
   if (game.phase !== 'lobby') throw new Error('Only a waiting room can be cancelled')
   clearRevealTimer(game)
+  clearExpiryTimer(game)
   game.phase = 'cancelled'
-  game.cancelledAt = Date.now()
+  game.closedAt = Date.now()
   game.revision += 1
   publishGame(game, 'all')
 }
 
 export function joinGame(game: StoredGame, nickname: string) {
-  if (game.phase !== 'lobby') throw new Error(game.phase === 'cancelled' ? 'This quiz was cancelled' : 'This game has already started')
+  expireGameIfDue(game)
+  if (game.phase !== 'lobby') throw new Error(game.phase === 'cancelled' ? 'This quiz was cancelled' : game.phase === 'expired' ? 'This quiz closed after one hour' : 'This game has already started')
   const name = nickname.trim()
   if (!name || name.length > 20) throw new Error('Nickname must be 1 to 20 characters')
   if (game.players.some((player) => player.nickname.toLowerCase() === name.toLowerCase())) {
@@ -175,6 +230,7 @@ export function authenticatePlayer(game: StoredGame, id: string | null, playerTo
 }
 
 export function hostAction(game: StoredGame, action: string) {
+  expireGameIfDue(game)
   updateTimedState(game)
   if (action === 'start' && game.phase === 'lobby') {
     game.phase = 'quiz'
@@ -209,6 +265,7 @@ export function hostAction(game: StoredGame, action: string) {
 }
 
 export function submitAnswer(game: StoredGame, player: Player, choiceId: string) {
+  expireGameIfDue(game)
   updateTimedState(game)
   if (game.phase !== 'quiz' || game.isAnswerRevealed || game.questionStartedAt === null) {
     throw new Error('This question is closed')

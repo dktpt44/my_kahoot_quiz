@@ -1,0 +1,52 @@
+{
+  "name": "CVPR Demo",
+  "type": "Easy",
+  "description": "Basic Hough line detection and HOG descriptors",
+  "questions": [
+    {
+      "body": "What does the Hough transform help detect in an image?",
+      "choices": [
+        { "body": "Lines and other geometric shapes", "is_correct": true },
+        { "body": "Audio frequencies", "is_correct": false },
+        { "body": "File permissions", "is_correct": false },
+        { "body": "Network addresses", "is_correct": false }
+      ]
+    },
+    {
+      "body": "What image information is commonly used as input to Hough line detection?",
+      "choices": [
+        { "body": "Edge pixels", "is_correct": true },
+        { "body": "Sound samples", "is_correct": false },
+        { "body": "Image filenames", "is_correct": false },
+        { "body": "Keyboard events", "is_correct": false }
+      ]
+    },
+    {
+      "body": "In Hough line detection, what does a peak in the voting space indicate?",
+      "choices": [
+        { "body": "A likely line in the image", "is_correct": true },
+        { "body": "The image width", "is_correct": false },
+        { "body": "The number of colors", "is_correct": false },
+        { "body": "A missing pixel", "is_correct": false }
+      ]
+    },
+    {
+      "body": "What does HOG stand for?",
+      "choices": [
+        { "body": "Histogram of Oriented Gradients", "is_correct": true },
+        { "body": "History of Optical Geometry", "is_correct": false },
+        { "body": "High Output Graphics", "is_correct": false },
+        { "body": "Horizontal Object Grid", "is_correct": false }
+      ]
+    },
+    {
+      "body": "What does a HOG descriptor summarize in a small image region?",
+      "choices": [
+        { "body": "The directions of intensity changes", "is_correct": true },
+        { "body": "The file creation date", "is_correct": false },
+        { "body": "The camera brand", "is_correct": false },
+        { "body": "The image's network location", "is_correct": false }
+      ]
+    }
+  ]
+}

@@ -97,6 +97,14 @@ export default function HostGame({ params }: { params: Promise<{ id: string }> }
       {view?.phase === 'lobby' && <Lobby participants={view.participants} gameId={id} quizName={view.quizName} defaultJoinUrl={view.joinUrl} onStart={() => act('start')} onCancel={cancelQuiz} cancelling={cancelling} />}
       {view?.phase === 'quiz' && <Quiz view={{ ...view, serverNow: now }} onAction={act} />}
       {view?.phase === 'result' && <Results view={view} onReturnHome={returnHome} closing={closing} />}
+      {view?.phase === 'expired' && <div className="container-game flex min-h-[72vh] items-center justify-center pb-16">
+        <section className="glass w-full max-w-xl px-7 py-12 text-center animate-in sm:px-12" role="status">
+          <p className="eyebrow">Room closed</p>
+          <h1 className="mt-3 text-3xl font-extrabold tracking-tight sm:text-4xl">Quiz closed after one hour</h1>
+          <p className="text-muted mt-4">Start a new room from Home to keep playing.</p>
+          <Link href="/host/dashboard" onClick={() => localStorage.removeItem(`host:${id}`)} className="btn-primary mt-8 inline-flex">Return to home</Link>
+        </section>
+      </div>}
     </div>
   </main>
 }

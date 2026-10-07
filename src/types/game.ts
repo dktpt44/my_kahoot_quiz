@@ -5,7 +5,7 @@ export type QuizSummary = Pick<QuizSet, 'id' | 'name' | 'description'> & { quest
 export type Participant = { id: string; nickname: string }
 export type Answer = { participantId: string; questionId: string; choiceId: string; score: number }
 export type GameResult = Participant & { totalScore: number }
-export type GamePhase = 'lobby' | 'quiz' | 'result' | 'cancelled'
+export type GamePhase = 'lobby' | 'quiz' | 'result' | 'cancelled' | 'expired'
 export type PlayerQuestion = Omit<Question, 'choices'> & { choices: Omit<Choice, 'is_correct'>[] | Choice[] }
 export type PlayerGameView = {
   revision: number

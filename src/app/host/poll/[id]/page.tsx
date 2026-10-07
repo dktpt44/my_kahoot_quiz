@@ -52,7 +52,7 @@ const SharePoll = memo(function SharePoll({ defaultUrl, id }: { defaultUrl: stri
       <span className="eyebrow">Poll code</span><strong className="font-mono text-3xl font-extrabold tracking-[.08em]">{id}</strong>
     </div>
     <label className="mt-5 block"><span className="label">Participant link</span><input ref={input} className="field text-sm" value={url} onChange={(event) => { setUrl(event.target.value); setCopied(false); setCopyHint('') }} /></label>
-    <p className="text-muted mt-2 text-xs">Phones must be on the same network. Edit the link if another address is needed.</p>
+    <p className="text-muted mt-2 text-xs">Share this link with participants. For local hosting, their phones must be on the same network.</p>
     <button className="btn-secondary mt-4 w-full" type="button" disabled={!qrUrl} onClick={copy}>{copied ? 'Copied!' : 'Copy poll link'}</button>
     {copyHint && <p className="text-muted mt-2 text-xs" role="status">{copyHint}</p>}
   </section>
@@ -82,7 +82,7 @@ function PollChart({ view, working, onEnd, onLeave }: {
         </div>
       })}
     </div>
-    <p className="text-muted mt-8 text-sm">{view.phase === 'open' ? 'The chart updates as participants submit.' : 'Participants can now see these results on their devices.'}</p>
+    <p className="text-muted mt-8 text-sm">{view.phase === 'open' ? 'The chart updates as participants submit.' : view.endedAutomatically ? 'The poll closed after one hour. Participants can see the final results.' : 'Participants can now see these results on their devices.'}</p>
     <div className="mt-5 flex flex-wrap gap-3">
       {view.phase === 'open'
         ? <button className="btn-cancel" type="button" disabled={working} onClick={onEnd}>{working ? 'Ending poll…' : 'End poll'}</button>
@@ -147,7 +147,7 @@ export default function HostPoll({ params }: { params: Promise<{ id: string }> }
     {error && <div className="container-game"><p className="notice mb-5" role="alert">{error}</p></div>}
     {!view && !error && <div className="container-game glass mt-8 flex min-h-72 items-center justify-center"><p className="text-muted">Preparing your poll…</p></div>}
     {view && <div className="container-game pb-16 animate-in">
-      <div className="mb-8"><p className="eyebrow">{view.phase === 'open' ? 'Ready for responses' : 'Poll complete'}</p><h1 className="mt-3 text-3xl font-extrabold tracking-tight sm:text-5xl">{view.phase === 'open' ? 'Your poll is live.' : 'Poll results'}</h1><p className="text-muted mt-3">{view.phase === 'open' ? 'Share the link or QR code. Each browser can submit once to this poll.' : 'Responses are closed. Everyone can see the final totals.'}</p></div>
+      <div className="mb-8"><p className="eyebrow">{view.phase === 'open' ? 'Ready for responses' : 'Poll complete'}</p><h1 className="mt-3 text-3xl font-extrabold tracking-tight sm:text-5xl">{view.phase === 'open' ? 'Your poll is live.' : 'Poll results'}</h1><p className="text-muted mt-3">{view.phase === 'open' ? 'Share the link or QR code. Each browser can submit once to this poll.' : view.endedAutomatically ? 'This poll closed automatically after one hour. Everyone can see the final totals.' : 'Responses are closed. Everyone can see the final totals.'}</p></div>
       <div className="grid gap-5 lg:grid-cols-2"><Delay index={1}><PollChart view={view} working={working} onEnd={end} onLeave={leave} /></Delay><Delay index={2}><SharePoll key={id} defaultUrl={view.joinUrl} id={id} /></Delay></div>
     </div>}
   </div></main>

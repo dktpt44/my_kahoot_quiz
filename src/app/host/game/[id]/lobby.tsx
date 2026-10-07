@@ -122,7 +122,7 @@ export default function Lobby({ participants, gameId, quizName, defaultJoinUrl, 
             <span className="label">Participant link</span>
             <input ref={linkInput} className="field text-sm" value={joinUrl} onChange={(event) => { setJoinUrl(event.target.value); setCopied(false); setCopyHint('') }} aria-label="Player join URL" />
           </label>
-          <p className="text-muted mt-2 text-xs">This uses your computer’s network address. Phones must be on the same network.</p>
+          <p className="text-muted mt-2 text-xs">Share this link with players. For local hosting, their phones must be on the same network.</p>
           <button className="btn-secondary mt-4 w-full" type="button" onClick={copyLink} disabled={!qrUrl} aria-live="polite">{copied ? 'Copied!' : 'Copy join link'}</button>
           {copyHint && <p role="status" className="text-muted mt-2 text-xs">{copyHint}</p>}
         </section>

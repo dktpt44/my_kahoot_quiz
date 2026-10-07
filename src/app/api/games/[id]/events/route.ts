@@ -39,7 +39,7 @@ export async function GET(request: Request, { params }: Context) {
         try {
           const view = host ? hostView(game) : playerView(game, player)
           controller.enqueue(encoder.encode(`data: ${JSON.stringify(view)}\n\n`))
-          if (view.phase === 'result' || view.phase === 'cancelled') close()
+          if (view.phase === 'result' || view.phase === 'cancelled' || view.phase === 'expired') close()
         } catch { close() }
       }
       unsubscribe = subscribeGame(game, (audience) => {

@@ -20,6 +20,33 @@
         { "body": "Keyboard", "is_correct": false },
         { "body": "Printer", "is_correct": false }
       ]
+    },
+    {
+      "body": "What does an IP address identify on a network?",
+      "choices": [
+        { "body": "A device or network interface", "is_correct": true },
+        { "body": "A file's size", "is_correct": false },
+        { "body": "A monitor's resolution", "is_correct": false },
+        { "body": "A keyboard layout", "is_correct": false }
+      ]
+    },
+    {
+      "body": "Which transport protocol provides reliable, ordered delivery?",
+      "choices": [
+        { "body": "TCP", "is_correct": true },
+        { "body": "UDP", "is_correct": false },
+        { "body": "IP", "is_correct": false },
+        { "body": "ARP", "is_correct": false }
+      ]
+    },
+    {
+      "body": "Which device usually connects computers within the same local network?",
+      "choices": [
+        { "body": "Switch", "is_correct": true },
+        { "body": "Projector", "is_correct": false },
+        { "body": "Scanner", "is_correct": false },
+        { "body": "Speaker", "is_correct": false }
+      ]
     }
   ]
 }

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 
 const template = `{
   "name": "your_quiz_name",
@@ -29,14 +29,51 @@ const template = `{
 
 export function QuizTemplate() {
   const [copied, setCopied] = useState(false)
+  const [copyHint, setCopyHint] = useState('')
+  const codeRef = useRef<HTMLElement>(null)
+  const resetTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  useEffect(() => () => {
+    if (resetTimer.current) clearTimeout(resetTimer.current)
+  }, [])
 
   const copy = async () => {
-    try {
-      await navigator.clipboard.writeText(template)
-      setCopied(true)
-      window.setTimeout(() => setCopied(false), 1800)
-    } catch {
-      setCopied(false)
+    if (resetTimer.current) clearTimeout(resetTimer.current)
+    let successful = false
+
+    if (window.isSecureContext && navigator.clipboard?.writeText) {
+      try {
+        await navigator.clipboard.writeText(template)
+        successful = true
+      } catch { /* Try the browser's selection-based copy below. */ }
+    }
+
+    if (!successful) {
+      const input = document.createElement('textarea')
+      input.value = template
+      input.readOnly = true
+      input.style.position = 'fixed'
+      input.style.opacity = '0'
+      document.body.appendChild(input)
+      input.focus()
+      input.select()
+      try { successful = document.execCommand('copy') } catch { /* Let the user copy the selected code. */ }
+      input.remove()
+    }
+
+    setCopied(successful)
+    if (successful) {
+      setCopyHint('')
+      resetTimer.current = setTimeout(() => setCopied(false), 1800)
+    } else {
+      if (codeRef.current) {
+        const selection = window.getSelection()
+        const range = document.createRange()
+        range.selectNodeContents(codeRef.current)
+        selection?.removeAllRanges()
+        selection?.addRange(range)
+      }
+      setCopyHint('The JSON is selected. Press Ctrl+C or Cmd+C to copy it.')
     }
   }
 
@@ -45,6 +82,7 @@ export function QuizTemplate() {
       <div><p className="eyebrow">Copy and edit</p><h2 id="quiz-template-title" className="mt-2 text-xl font-bold">quiz1.json</h2></div>
       <button className="btn-secondary px-4 py-2 text-sm" type="button" onClick={copy} aria-live="polite">{copied ? 'Copied!' : 'Copy JSON'}</button>
     </div>
-    <pre className="quiz-template-code"><code>{template}</code></pre>
+    {copyHint && <p className="text-muted mb-4 text-sm" role="status">{copyHint}</p>}
+    <pre className="quiz-template-code"><code ref={codeRef}>{template}</code></pre>
   </section>
 }

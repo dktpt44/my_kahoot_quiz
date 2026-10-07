@@ -27,6 +27,18 @@ function score(name: string, address: string): number {
 }
 
 export function joinOrigin(request: Request): string | null {
+  const publicOrigin = process.env.QUIZ_PUBLIC_ORIGIN?.trim()
+  if (publicOrigin) {
+    try {
+      const parsed = new URL(publicOrigin)
+      if (['http:', 'https:'].includes(parsed.protocol) && !parsed.username && !parsed.password &&
+          parsed.pathname === '/' && !parsed.search && !parsed.hash) return parsed.origin
+    } catch { /* Use the request or local network address below. */ }
+  }
+
+  const koyebDomain = process.env.KOYEB_PUBLIC_DOMAIN?.trim()
+  if (koyebDomain && /^[a-z\d.-]+$/i.test(koyebDomain)) return `https://${koyebDomain}`
+
   const url = new URL(request.url)
   const configuredHost = process.env.QUIZ_JOIN_HOST?.trim()
   const localHost = ['localhost', '127.0.0.1', '0.0.0.0', '[::1]'].includes(url.hostname)

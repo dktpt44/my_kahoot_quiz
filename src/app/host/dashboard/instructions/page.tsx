@@ -14,5 +14,9 @@ export default function Instructions() {
     </ol>
     <QuizTemplate />
     <p className="text-muted mt-5 text-sm">Each question needs 2–4 choices and exactly one <code>is_correct: true</code>. Add more questions to the array as needed.</p>
+    <section className="glass-soft mt-8 p-5 sm:p-6" aria-labelledby="session-limits-title">
+      <h2 id="session-limits-title" className="text-lg font-bold">Room time limit</h2>
+      <p className="text-muted mt-2 leading-relaxed">Quizzes and polls close automatically one hour after they are created. A quiz room stops accepting answers and shows a closure message. A poll stops accepting votes and shows its final results. Start a new room to continue after the limit.</p>
+    </section>
   </div>
 }

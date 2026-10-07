@@ -46,7 +46,7 @@ export function useGameView<T extends LiveView>(
     let retryTimer: ReturnType<typeof setTimeout> | undefined
     let controller: AbortController | null = null
     let retryDelay = 1000
-    const isFinished = () => viewRef.current?.phase === 'result' || viewRef.current?.phase === 'cancelled'
+    const isFinished = () => viewRef.current?.phase === 'result' || viewRef.current?.phase === 'cancelled' || viewRef.current?.phase === 'expired'
 
     const connect = async () => {
       if (!active || document.hidden || connecting || isFinished()) return
@@ -82,7 +82,7 @@ export function useGameView<T extends LiveView>(
             if (data) {
               const next = JSON.parse(data.slice(6)) as T
               if (active) { applyView(next); setError('') }
-              if (next.phase === 'result' || next.phase === 'cancelled') {
+              if (next.phase === 'result' || next.phase === 'cancelled' || next.phase === 'expired') {
                 requestController.abort()
                 return
               }

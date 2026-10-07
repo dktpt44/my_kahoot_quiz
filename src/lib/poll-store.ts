@@ -7,7 +7,9 @@ type StoredPoll = {
   id: string
   revision: number
   lastAccessedAt: number
+  expiresAt: number
   endedAt: number | null
+  endedAutomatically: boolean
   closedAt: number | null
   hostToken: string
   joinUrl: string | null
@@ -17,6 +19,7 @@ type StoredPoll = {
   phase: PollPhase
   votes: Map<string, string>
   subscribers: Set<(audience: Audience) => void>
+  expiryTimer: ReturnType<typeof setTimeout> | null
 }
 
 const globalPolls = globalThis as typeof globalThis & {
@@ -25,7 +28,7 @@ const globalPolls = globalThis as typeof globalThis & {
 }
 const polls = globalPolls.livePolls ??= new Map<string, StoredPoll>()
 const visitorSecret = globalPolls.pollVisitorSecret ??= randomBytes(32)
-const ACTIVE_IDLE_TTL_MS = 6 * 60 * 60 * 1000
+const POLL_MAX_AGE_MS = 60 * 60 * 1000
 const ENDED_TTL_MS = 60 * 60 * 1000
 const CLOSED_TTL_MS = 10 * 60 * 1000
 export const POLL_VISITOR_COOKIE = 'poll_visitor'
@@ -33,7 +36,25 @@ export const POLL_VISITOR_COOKIE = 'poll_visitor'
 function expired(poll: StoredPoll, now: number) {
   if (poll.closedAt !== null) return now - poll.closedAt > CLOSED_TTL_MS
   if (poll.endedAt !== null) return now - poll.endedAt > ENDED_TTL_MS
-  return poll.subscribers.size === 0 && now - poll.lastAccessedAt > ACTIVE_IDLE_TTL_MS
+  return false
+}
+
+function clearExpiryTimer(poll: StoredPoll) {
+  if (poll.expiryTimer) clearTimeout(poll.expiryTimer)
+  poll.expiryTimer = null
+}
+
+function expirePollIfDue(poll: StoredPoll, now = Date.now()) {
+  if (poll.phase === 'open' && now >= poll.expiresAt) endPoll(poll, true)
+}
+
+function scheduleExpiry(poll: StoredPoll) {
+  if (poll.phase !== 'open' || poll.expiryTimer) return
+  poll.expiryTimer = setTimeout(() => {
+    poll.expiryTimer = null
+    expirePollIfDue(poll)
+  }, Math.max(0, poll.expiresAt - Date.now()))
+  poll.expiryTimer.unref()
 }
 
 function signature(id: string) {
@@ -64,7 +85,16 @@ export function createPoll(input: unknown, origin: string | null) {
     throw new Error('Add 2 to 8 options, each 1 to 200 characters')
   }
   const now = Date.now()
-  for (const [id, poll] of polls) if (expired(poll, now)) polls.delete(id)
+  for (const [id, poll] of polls) {
+    poll.expiryTimer ??= null
+    poll.expiresAt ??= poll.lastAccessedAt + POLL_MAX_AGE_MS
+    poll.endedAutomatically ??= false
+    expirePollIfDue(poll, now)
+    if (expired(poll, now)) {
+      clearExpiryTimer(poll)
+      polls.delete(id)
+    }
+  }
   const firstCode = randomInt(1000, 10000)
   let id = ''
   for (let offset = 0; offset < 9000; offset += 1) {
@@ -73,14 +103,16 @@ export function createPoll(input: unknown, origin: string | null) {
   }
   if (!id) throw new Error('No poll codes are available')
   const poll: StoredPoll = {
-    id, revision: 1, lastAccessedAt: now, endedAt: null, closedAt: null,
+    id, revision: 1, lastAccessedAt: now, expiresAt: now + POLL_MAX_AGE_MS,
+    endedAt: null, endedAutomatically: false, closedAt: null,
     hostToken: randomBytes(32).toString('hex'),
     joinUrl: origin ? `${origin}/poll/${id}` : null,
     question: question.trim(), type: 'multiple_choice',
     options: options.map((option: string, index: number) => ({ id: String(index + 1), text: option.trim() })),
-    phase: 'open', votes: new Map(), subscribers: new Set(),
+    phase: 'open', votes: new Map(), subscribers: new Set(), expiryTimer: null,
   }
   polls.set(id, poll)
+  scheduleExpiry(poll)
   return { id, hostToken: poll.hostToken }
 }
 
@@ -88,8 +120,14 @@ export function getPoll(id: string) {
   const poll = polls.get(id)
   if (!poll) return undefined
   poll.subscribers ??= new Set()
-  if (expired(poll, Date.now())) { polls.delete(id); return undefined }
-  if (poll.phase === 'open') poll.lastAccessedAt = Date.now()
+  poll.expiryTimer ??= null
+  poll.expiresAt ??= poll.lastAccessedAt + POLL_MAX_AGE_MS
+  poll.endedAutomatically ??= false
+  const now = Date.now()
+  expirePollIfDue(poll, now)
+  if (expired(poll, now)) { clearExpiryTimer(poll); polls.delete(id); return undefined }
+  if (poll.phase === 'open') poll.lastAccessedAt = now
+  scheduleExpiry(poll)
   return poll
 }
 
@@ -106,6 +144,7 @@ function counts(poll: StoredPoll) {
 export function hostPollView(poll: StoredPoll): HostPollView {
   return {
     id: poll.id, revision: poll.revision, phase: poll.phase,
+    endedAutomatically: poll.endedAutomatically,
     question: poll.question, type: poll.type, options: poll.options,
     joinUrl: poll.joinUrl, submissionCount: poll.votes.size, voteCounts: counts(poll),
   }
@@ -114,6 +153,7 @@ export function hostPollView(poll: StoredPoll): HostPollView {
 export function playerPollView(poll: StoredPoll, visitorId: string | null): PlayerPollView {
   return {
     id: poll.id, revision: poll.revision, phase: poll.phase,
+    endedAutomatically: poll.endedAutomatically,
     question: poll.question, type: poll.type, options: poll.options,
     selectedOptionId: visitorId ? poll.votes.get(visitorId) ?? null : null,
     submissionCount: poll.phase === 'ended' ? poll.votes.size : null,
@@ -133,6 +173,7 @@ function publish(poll: StoredPoll, audience: Audience) {
 }
 
 export function submitPollVote(poll: StoredPoll, visitorId: string, optionId: string) {
+  expirePollIfDue(poll)
   if (poll.phase !== 'open') throw new Error('This poll has ended')
   if (poll.votes.has(visitorId)) throw new Error('You already submitted this poll')
   if (!poll.options.some((option) => option.id === optionId)) throw new Error('Choose a valid option')
@@ -141,16 +182,20 @@ export function submitPollVote(poll: StoredPoll, visitorId: string, optionId: st
   publish(poll, 'host')
 }
 
-export function endPoll(poll: StoredPoll) {
+export function endPoll(poll: StoredPoll, automatically = false) {
+  if (!automatically) expirePollIfDue(poll)
   if (poll.phase !== 'open') throw new Error('This poll has already ended')
+  clearExpiryTimer(poll)
   poll.phase = 'ended'
   poll.endedAt = Date.now()
+  poll.endedAutomatically = automatically
   poll.revision += 1
   publish(poll, 'all')
 }
 
 export function closePoll(poll: StoredPoll) {
   if (poll.phase !== 'ended') throw new Error('End the poll before closing it')
+  clearExpiryTimer(poll)
   poll.hostToken = ''
   poll.closedAt = Date.now()
 }

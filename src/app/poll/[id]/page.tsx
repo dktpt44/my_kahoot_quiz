@@ -60,7 +60,7 @@ export default function PlayerPoll({ params }: { params: Promise<{ id: string }>
       <p className="eyebrow">Response received</p><h1 className="mt-3 text-3xl font-extrabold">Poll submitted</h1><p className="text-muted mt-4">Your response is saved. Results will appear here when the host ends the poll.</p>
     </section></div>}
     {view?.phase === 'ended' && <div className="container-game max-w-3xl pb-16 animate-in"><section className="glass p-6 sm:p-9">
-      <p className="eyebrow">Poll complete</p><h1 className="mt-3 text-3xl font-extrabold tracking-tight">{view.question}</h1><p className="text-muted mt-3">{view.submissionCount} {view.submissionCount === 1 ? 'response' : 'responses'} submitted</p>
+      <p className="eyebrow">Poll complete</p><h1 className="mt-3 text-3xl font-extrabold tracking-tight">{view.question}</h1><p className="text-muted mt-3">{view.endedAutomatically && 'Closed automatically after one hour · '}{view.submissionCount} {view.submissionCount === 1 ? 'response' : 'responses'} submitted</p>
       <div className="mt-8 space-y-5" aria-label="Poll results">{view.options.map((option, index) => {
         const count = view.voteCounts?.[option.id] ?? 0
         const percent = view.submissionCount ? Math.round(count / view.submissionCount * 100) : 0
