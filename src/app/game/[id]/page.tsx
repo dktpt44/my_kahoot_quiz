@@ -2,6 +2,7 @@
 
 import { use, useEffect, useState } from 'react'
 import { Brand, StatPill } from '@/components/ui'
+import CloseParticipantWindow from '@/components/close-participant-window'
 import { useGameView } from '@/lib/use-game-view'
 import type { PlayerGameView } from '@/types/game'
 import Lobby from './lobby'
@@ -86,6 +87,7 @@ export default function PlayerGame({ params }: { params: Promise<{ id: string }>
           <h1 className="mt-3 text-3xl font-extrabold tracking-tight sm:text-4xl">Session complete, <span className="gradient-text">{player.nickname}.</span></h1>
           <p className="text-muted mt-4">Your answers are in. The final standings are on the host screen.</p>
           <div className="glass-soft mt-8 p-4 text-sm text-[#d6def5]">Thanks for playing {view.quizName}.</div>
+          <CloseParticipantWindow />
         </section>
       </div>}
     </div>

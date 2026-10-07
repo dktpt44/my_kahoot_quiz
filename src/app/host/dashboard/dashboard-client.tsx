@@ -1,5 +1,6 @@
 'use client'
 
+import Link from 'next/link'
 import type { CSSProperties } from 'react'
 import { useState } from 'react'
 import { ArrowIcon, Delay } from '@/components/ui'
@@ -130,6 +131,7 @@ export default function DashboardClient({ quizzes, categories }: { quizzes: Quiz
           </div>
         </div>
         <p className="text-muted mt-5 max-w-lg leading-relaxed">Choose a category and quiz to open a room and invite your players.</p>
+        <Link className="btn-primary btn-success mt-6" href="/host/dashboard/polls/new">Create a poll <ArrowIcon /></Link>
       </div>
     </section>
 

@@ -2,8 +2,8 @@ import type { Metadata } from 'next'
 import './globals.css'
 
 export const metadata: Metadata = {
-  title: 'Quiz Game',
-  description: 'A multiplayer quiz game using local quiz files',
+  title: 'Quizlet',
+  description: 'Host quizzes and quick polls for live participants',
 }
 
 export default function RootLayout({

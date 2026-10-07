@@ -1,6 +1,6 @@
-# Quiz Game
+# Quizlet
 
-Host multiplayer quizzes from JSON files in `data`. Players join by link or QR code, answer on their own devices, and see the final leaderboard.
+Host multiplayer quizzes from JSON files in `data`, or create a quick live poll. Participants join by link or QR code and respond on their own devices.
 
 ## Installation and run
 
@@ -44,6 +44,14 @@ Open **Instructions** on the dashboard for a copyable two-question JSON template
 - **Cancel quiz** in the waiting room ends that room and tells joined players to scan a new QR code.
 - Reveal answers to see the vote distribution. **Return to home** after the results closes the room and frees its code.
 
+## Quick polls
+
+- Select **Create a poll** on Home. Enter a question of up to 500 characters, choose **Multiple choice**, and add 2–8 options of up to 200 characters each. Select **Create poll** to open a live poll and QR link.
+- Participants select one option and submit. The host sees the response count and option chart update live.
+- **End poll** stops new votes and shows results on participant screens. Then **Close and go home** or **Modify poll** to use the same question and options as a new draft.
+- One submission is allowed per browser per poll. The anonymous browser cookie works across polls, so voting in one poll does not prevent voting in another. Without participant accounts, clearing cookies or using another browser can allow another submission.
+- Polls and responses live in server memory and are lost on restart. Ended polls remain available for one hour; closed polls remain available to participants for ten minutes.
+
 ## Network, security, and sessions
 
 - By default, hosting through localhost generates player links and QR codes with a LAN IPv4 address. Players must be on the same network, with the server port reachable.
@@ -51,7 +59,7 @@ Open **Instructions** on the dashboard for a copyable two-question JSON template
 - Use local HTTP only on a trusted network. Use HTTPS if the admin signs in over an untrusted network; HTTP does not encrypt the password.
 - Admin sessions last seven days. **Sign out** on the dashboard. Restarting after a password change invalidates existing sessions.
 - Keep `QUIZ_ADMIN_PASSWORD` on the server; do not use a `NEXT_PUBLIC_` prefix.
-- Run one persistent server instance. Games live in memory, so restarting ends them. Idle rooms expire after six hours without a connected client or request.
+- Run one persistent server instance. Games and polls live in memory, so restarting ends them. Idle rooms expire after six hours without a connected client or request.
 - The host token stays in the browser that created the room; use that browser to host the game.
 
 ## Checks

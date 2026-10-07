@@ -5,7 +5,7 @@ import { hasAdminSession } from '@/lib/admin-auth'
 import LoginForm from './login-form'
 
 export const metadata: Metadata = {
-  title: 'Admin sign in · Quiz Game',
+  title: 'Admin sign in · Quizlet',
   description: 'Sign in to manage and host quizzes.',
 }
 
