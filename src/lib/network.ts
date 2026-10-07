@@ -26,28 +26,73 @@ function score(name: string, address: string): number {
   return result
 }
 
+function validOrigin(value: string | undefined): string | null {
+  if (!value?.trim()) return null
+  try {
+    const parsed = new URL(value.trim())
+    if (['http:', 'https:'].includes(parsed.protocol) && !parsed.username && !parsed.password &&
+        parsed.pathname === '/' && !parsed.search && !parsed.hash) return parsed.origin
+  } catch { /* Ignore invalid deployment configuration. */ }
+  return null
+}
+
+function isLoopback(hostname: string): boolean {
+  return ['localhost', '127.0.0.1', '0.0.0.0', '[::1]'].includes(hostname)
+}
+
+function isPrivateAddress(hostname: string): boolean {
+  return /^10\.|^192\.168\.|^172\.(1[6-9]|2\d|3[01])\.|^169\.254\./.test(hostname) ||
+    /^\[(fc|fd|fe80)/i.test(hostname)
+}
+
+function publicRequestOrigin(value: string | null): string | null {
+  const origin = validOrigin(value ?? undefined)
+  if (!origin) return null
+  const hostname = new URL(origin).hostname
+  return isLoopback(hostname) || isPrivateAddress(hostname) ? null : origin
+}
+
 export function joinOrigin(request: Request): string | null {
-  const publicOrigin = process.env.QUIZ_PUBLIC_ORIGIN?.trim()
-  if (publicOrigin) {
-    try {
-      const parsed = new URL(publicOrigin)
-      if (['http:', 'https:'].includes(parsed.protocol) && !parsed.username && !parsed.password &&
-          parsed.pathname === '/' && !parsed.search && !parsed.hash) return parsed.origin
-    } catch { /* Use the request or local network address below. */ }
+  const publicOrigin = validOrigin(process.env.QUIZ_PUBLIC_ORIGIN)
+  if (publicOrigin) return publicOrigin
+
+  const url = new URL(request.url)
+  const configuredHost = process.env.QUIZ_JOIN_HOST?.trim()
+  if (configuredHost && /^[a-z\d.-]+$/i.test(configuredHost)) {
+    return `${url.protocol}//${configuredHost}${url.port ? `:${url.port}` : ''}`
   }
+
+  // A browser POST carries the actual address used by the host, including custom domains.
+  const browserOrigin = validOrigin(request.headers.get('origin') ?? undefined)
+  if (browserOrigin && !isLoopback(new URL(browserOrigin).hostname)) return browserOrigin
+
+  // Reverse proxies can expose an internal request URL while forwarding the public host.
+  const forwardedHost = request.headers.get('x-forwarded-host')
+  const forwardedProto = request.headers.get('x-forwarded-proto')
+  if (forwardedHost && (forwardedProto === 'https' || forwardedProto === 'http')) {
+    const forwardedOrigin = publicRequestOrigin(`${forwardedProto}://${forwardedHost}`)
+    if (forwardedOrigin) return forwardedOrigin
+  }
+
+  const renderOrigin = validOrigin(process.env.RENDER_EXTERNAL_URL)
+  if (renderOrigin) return renderOrigin
+
+  const renderHostname = process.env.RENDER_EXTERNAL_HOSTNAME?.trim()
+  if (renderHostname && /^[a-z\d.-]+$/i.test(renderHostname)) return `https://${renderHostname}`
 
   const koyebDomain = process.env.KOYEB_PUBLIC_DOMAIN?.trim()
   if (koyebDomain && /^[a-z\d.-]+$/i.test(koyebDomain)) return `https://${koyebDomain}`
 
-  const url = new URL(request.url)
-  const configuredHost = process.env.QUIZ_JOIN_HOST?.trim()
-  const localHost = ['localhost', '127.0.0.1', '0.0.0.0', '[::1]'].includes(url.hostname)
+  const localHost = isLoopback(url.hostname)
 
-  if (!localHost && !configuredHost) return url.origin
+  const requestHost = request.headers.get('host')
+  if (requestHost) {
+    const hostOrigin = publicRequestOrigin(`${url.protocol}//${requestHost}`)
+    if (hostOrigin) return hostOrigin
+  }
 
-  const host = configuredHost && /^[a-z\d.-]+$/i.test(configuredHost)
-    ? configuredHost
-    : lanAddress()
+  if (!localHost) return isPrivateAddress(url.hostname) ? null : url.origin
 
+  const host = lanAddress()
   return host ? `${url.protocol}//${host}${url.port ? `:${url.port}` : ''}` : null
 }

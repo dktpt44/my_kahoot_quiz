@@ -2,6 +2,10 @@
 
 Host multiplayer quizzes from JSON files in `data`, or create a quick live poll. Participants join by link or QR code and respond on their own devices.
 
+Demo Preview: [https://my-kahoot-quiz-demo.onrender.com/login](https://my-kahoot-quiz-demo.onrender.com/login) \
+Password: admin \
+Caution: This demo is only for viewing purposes. Do not use this to host a quiz on a live audience.
+
 ## Installation and run
 
 Requires Node.js 20.9+ and npm.
@@ -58,7 +62,7 @@ Open **Instructions** on the dashboard for a copyable two-question JSON template
 
 - By default, hosting through localhost generates player links and QR codes with a LAN IPv4 address. Players must be on the same network, with the server port reachable.
 - If the selected address is wrong, edit the player link in the lobby or set `QUIZ_JOIN_HOST`, for example: `QUIZ_JOIN_HOST=192.168.1.25 npm run start`.
-- For a public deployment, set `QUIZ_PUBLIC_ORIGIN=https://your-domain.example` to generate public QR links. Koyeb deployments use `KOYEB_PUBLIC_DOMAIN` automatically unless you set this override.
+- For a public deployment, quiz and poll links use the address opened in the host's browser, with proxy headers or the provider's public URL as a fallback. Set `QUIZ_PUBLIC_ORIGIN=https://your-domain.example` only if you need to override automatic detection.
 - Use local HTTP only on a trusted network. Use HTTPS if the admin signs in over an untrusted network; HTTP does not encrypt the password.
 - Admin sessions last seven days. **Sign out** on the dashboard. Restarting after a password change invalidates existing sessions.
 - Keep `QUIZ_ADMIN_PASSWORD` on the server; do not use a `NEXT_PUBLIC_` prefix.
@@ -67,7 +71,9 @@ Open **Instructions** on the dashboard for a copyable two-question JSON template
 
 ## Cloud demo
 
-See the [Koyeb deployment guide](docs/cloud-deployment.md) for a step-by-step free demo setup and its limits.
+Demo Preview: [https://my-kahoot-quiz-demo.onrender.com/login](https://my-kahoot-quiz-demo.onrender.com/login) \
+Password: admin \
+Caution: This demo is only for viewing purposes. Do not use this to host a quiz on a live audience.
 
 ## Checks
 
