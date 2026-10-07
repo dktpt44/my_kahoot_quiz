@@ -129,6 +129,13 @@ export function isHost(game: StoredGame, hostToken: string | null) {
   return !!hostToken && hostToken === game.hostToken
 }
 
+export function closeGame(game: StoredGame) {
+  if (game.phase !== 'result') throw new Error('This session has not finished yet')
+  clearRevealTimer(game)
+  game.subscribers.clear()
+  games.delete(game.id)
+}
+
 export function joinGame(game: StoredGame, nickname: string) {
   if (game.phase !== 'lobby') throw new Error('This game has already started')
   const name = nickname.trim()

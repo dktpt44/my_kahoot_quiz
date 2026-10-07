@@ -1,7 +1,7 @@
 import { Delay, StatPill } from '@/components/ui'
 import type { HostGameView } from '@/types/game'
 
-export default function Results({ view }: { view: HostGameView }) {
+export default function Results({ view, onReturnHome, closing }: { view: HostGameView; onReturnHome: () => void; closing: boolean }) {
   const winner = view.results[0]
   return <div className="container-game pb-20">
     <section className="glass relative overflow-hidden px-6 py-10 text-center sm:px-10 sm:py-14 animate-in">
@@ -16,6 +16,9 @@ export default function Results({ view }: { view: HostGameView }) {
           <p className="mt-2 text-3xl font-extrabold">{winner.nickname}</p>
           <p className="mt-1 text-lg text-[#ffe0a6]">{winner.totalScore} points</p>
         </div>}
+        <button className="btn-primary btn-success mt-8 min-w-48" type="button" onClick={onReturnHome} disabled={closing}>
+          {closing ? 'Closing session...' : 'Return to home'}
+        </button>
       </div>
     </section>
     <section className="mt-10" aria-labelledby="leaderboard-title">

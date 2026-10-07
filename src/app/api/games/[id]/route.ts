@@ -1,4 +1,4 @@
-import { authenticatePlayer, gameRevision, getGame, hostAction, hostView, isHost, joinGame, playerView, submitAnswer } from '@/lib/game-store'
+import { authenticatePlayer, closeGame, gameRevision, getGame, hostAction, hostView, isHost, joinGame, playerView, submitAnswer } from '@/lib/game-store'
 
 export const dynamic = 'force-dynamic'
 
@@ -28,6 +28,13 @@ export async function POST(request: Request, { params }: Context) {
       const player = authenticatePlayer(game, request.headers.get('x-player-id'), request.headers.get('x-player-token'))
       if (!player) return Response.json({ error: 'Invalid player credentials' }, { status: 403 })
       submitAnswer(game, player, body.choiceId)
+      return Response.json({ ok: true })
+    }
+    if (body?.action === 'close') {
+      if (!isHost(game, request.headers.get('x-host-token'))) {
+        return Response.json({ error: 'Invalid host credentials' }, { status: 403 })
+      }
+      closeGame(game)
       return Response.json({ ok: true })
     }
     if (typeof body?.action === 'string' && ['start', 'reveal', 'next'].includes(body.action)) {

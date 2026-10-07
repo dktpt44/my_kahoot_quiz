@@ -1,5 +1,6 @@
 {
   "name": "Networks Demo",
+  "type": "Easy",
   "description": "A short introduction to computer networks",
   "questions": [
     {

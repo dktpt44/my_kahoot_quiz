@@ -1,5 +1,5 @@
 import 'server-only'
-import { readFile } from 'node:fs/promises'
+import { readFile, readdir } from 'node:fs/promises'
 import path from 'node:path'
 import { quizPaths } from '../../config'
 import type { QuizSet, QuizSummary } from '@/types/game'
@@ -47,4 +47,9 @@ export async function listQuizzes(): Promise<QuizSummary[]> {
   return (await loadQuizzes()).map(({ id, name, description, questions }) => ({
     id, name, description, questionCount: questions.length,
   }))
+}
+
+export async function countQuizCategories() {
+  const entries = await readdir(path.join(process.cwd(), 'data'), { withFileTypes: true })
+  return entries.filter((entry) => entry.isDirectory()).length
 }

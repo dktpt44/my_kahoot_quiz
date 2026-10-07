@@ -12,6 +12,7 @@ import Results from './results'
 export default function HostGame({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params)
   const [hostToken, setHostToken] = useState('')
+  const [closing, setClosing] = useState(false)
   const { view, applyView, error, setError, now } = useGameView<HostGameView>(id, 'host', hostToken)
 
   useEffect(() => {
@@ -38,6 +39,26 @@ export default function HostGame({ params }: { params: Promise<{ id: string }> }
     }
   }
 
+  const returnHome = async () => {
+    if (closing) return
+    setClosing(true)
+    try {
+      const response = await fetch(`/api/games/${id}`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json', 'x-host-token': hostToken },
+        body: JSON.stringify({ action: 'close' }),
+      })
+      if (!response.ok) {
+        const result = await response.json()
+        throw new Error(result.error || 'Could not close the session')
+      }
+      localStorage.removeItem(`host:${id}`)
+      window.location.assign('/host/dashboard')
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : 'Could not close the session')
+      setClosing(false)
+    }
+  }
+
   return <main className="app-shell">
     <div className="surface">
       <header className="container-game flex flex-wrap items-center justify-between gap-4 py-5 sm:py-7">
@@ -54,7 +75,7 @@ export default function HostGame({ params }: { params: Promise<{ id: string }> }
       </div>}
       {view?.phase === 'lobby' && <Lobby participants={view.participants} gameId={id} quizName={view.quizName} defaultJoinUrl={view.joinUrl} onStart={() => act('start')} />}
       {view?.phase === 'quiz' && <Quiz view={{ ...view, serverNow: now }} onAction={act} />}
-      {view?.phase === 'result' && <Results view={view} />}
+      {view?.phase === 'result' && <Results view={view} onReturnHome={returnHome} closing={closing} />}
     </div>
   </main>
 }
