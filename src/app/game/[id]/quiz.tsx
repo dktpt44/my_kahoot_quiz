@@ -1,4 +1,3 @@
-import { QUESTION_ANSWER_TIME, TIME_TIL_CHOICE_REVEAL } from '@/constants'
 import { CountdownBar } from '@/components/countdown'
 import { Delay, ProgressBar, StatPill } from '@/components/ui'
 import type { PlayerGameView } from '@/types/game'
@@ -12,8 +11,8 @@ export default function Quiz({ view, selectedChoiceId, onAnswer }: {
 }) {
   const question = view.question!
   const elapsed = view.serverNow - (view.questionStartedAt ?? view.serverNow)
-  const choicesVisible = elapsed >= TIME_TIL_CHOICE_REVEAL || view.isAnswerRevealed
-  const secondsLeft = Math.max(0, Math.ceil((TIME_TIL_CHOICE_REVEAL + QUESTION_ANSWER_TIME - elapsed) / 1000))
+  const choicesVisible = elapsed >= view.choiceRevealMs || view.isAnswerRevealed
+  const secondsLeft = Math.max(0, Math.ceil((view.choiceRevealMs + view.answerTimeMs - elapsed) / 1000))
   const selected = question.choices.find((choice) => choice.id === selectedChoiceId)
   const selectedIsCorrect = selected && 'is_correct' in selected && selected.is_correct
   const correctChoice = view.isAnswerRevealed ? question.choices.find((choice) => 'is_correct' in choice && choice.is_correct) : null
@@ -31,7 +30,7 @@ export default function Quiz({ view, selectedChoiceId, onAnswer }: {
     <section className="glass px-6 py-8 animate-in sm:px-9 sm:py-10" aria-labelledby="question-title">
       <span className="eyebrow">Select one answer</span>
       <h2 id="question-title" className="mt-4 text-3xl font-bold leading-snug tracking-tight sm:text-[2.5rem]">{question.body}</h2>
-      <div className="mt-7 flex items-center gap-3"><span className="text-muted whitespace-nowrap text-xs font-semibold">Time left</span><CountdownBar key={question.id} elapsedMs={elapsed} durationMs={TIME_TIL_CHOICE_REVEAL + QUESTION_ANSWER_TIME} paused={view.isAnswerRevealed} /></div>
+      <div className="mt-7 flex items-center gap-3"><span className="text-muted whitespace-nowrap text-xs font-semibold">Time left</span><CountdownBar key={question.id} elapsedMs={elapsed} durationMs={view.choiceRevealMs + view.answerTimeMs} paused={view.isAnswerRevealed} /></div>
     </section>
 
     {!choicesVisible && !view.isAnswerRevealed && <div className="glass-soft mt-5 flex min-h-44 flex-col items-center justify-center text-center animate-in">

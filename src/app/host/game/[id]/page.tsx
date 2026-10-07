@@ -13,6 +13,7 @@ export default function HostGame({ params }: { params: Promise<{ id: string }> }
   const { id } = use(params)
   const [hostToken, setHostToken] = useState('')
   const [closing, setClosing] = useState(false)
+  const [cancelling, setCancelling] = useState(false)
   const { view, applyView, error, setError, now } = useGameView<HostGameView>(id, 'host', hostToken)
 
   useEffect(() => {
@@ -59,6 +60,26 @@ export default function HostGame({ params }: { params: Promise<{ id: string }> }
     }
   }
 
+  const cancelQuiz = async () => {
+    if (cancelling) return
+    setCancelling(true)
+    try {
+      const response = await fetch(`/api/games/${id}`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json', 'x-host-token': hostToken },
+        body: JSON.stringify({ action: 'cancel' }),
+      })
+      if (!response.ok) {
+        const result = await response.json()
+        throw new Error(result.error || 'Could not cancel the quiz')
+      }
+      localStorage.removeItem(`host:${id}`)
+      window.location.assign('/host/dashboard')
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : 'Could not cancel the quiz')
+      setCancelling(false)
+    }
+  }
+
   return <main className="app-shell">
     <div className="surface">
       <header className="container-game flex flex-wrap items-center justify-between gap-4 py-5 sm:py-7">
@@ -73,7 +94,7 @@ export default function HostGame({ params }: { params: Promise<{ id: string }> }
         <div className="flex gap-2"><span className="loading-dot" /><span className="loading-dot" /><span className="loading-dot" /></div>
         <p className="text-muted">Preparing your room...</p>
       </div>}
-      {view?.phase === 'lobby' && <Lobby participants={view.participants} gameId={id} quizName={view.quizName} defaultJoinUrl={view.joinUrl} onStart={() => act('start')} />}
+      {view?.phase === 'lobby' && <Lobby participants={view.participants} gameId={id} quizName={view.quizName} defaultJoinUrl={view.joinUrl} onStart={() => act('start')} onCancel={cancelQuiz} cancelling={cancelling} />}
       {view?.phase === 'quiz' && <Quiz view={{ ...view, serverNow: now }} onAction={act} />}
       {view?.phase === 'result' && <Results view={view} onReturnHome={returnHome} closing={closing} />}
     </div>

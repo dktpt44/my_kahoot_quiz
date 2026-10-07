@@ -19,8 +19,9 @@ function canScan(url: string): boolean {
   }
 }
 
-export default function Lobby({ participants, gameId, quizName, defaultJoinUrl, onStart }: {
+export default function Lobby({ participants, gameId, quizName, defaultJoinUrl, onStart, onCancel, cancelling }: {
   participants: Participant[]; gameId: string; quizName: string; defaultJoinUrl: string | null; onStart: () => void
+  onCancel: () => void; cancelling: boolean
 }) {
   const [joinUrl, setJoinUrl] = useState(defaultJoinUrl ?? '')
   const [copied, setCopied] = useState(false)
@@ -126,6 +127,11 @@ export default function Lobby({ participants, gameId, quizName, defaultJoinUrl, 
           {copyHint && <p role="status" className="text-muted mt-2 text-xs">{copyHint}</p>}
         </section>
       </Delay>
+    </div>
+    <div className="mt-8 flex justify-center animate-in">
+      <button className="btn-cancel" type="button" onClick={onCancel} disabled={cancelling}>
+        {cancelling ? 'Cancelling quiz…' : 'Cancel quiz'}
+      </button>
     </div>
   </div>
 }

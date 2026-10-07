@@ -121,6 +121,32 @@ a { text-decoration: none; }
 .btn-secondary:hover:not(:disabled) { background: rgba(151,106,220,.36); border-color: rgba(214,188,255,.7); box-shadow: 0 0 0 2px rgba(198,167,255,.1); }
 .btn-ghost { color: #cbd3eb; border: 1px solid transparent; background: transparent; }
 .btn-ghost:hover:not(:disabled) { color: white; background: rgba(255,255,255,.08); }
+.btn-settings, .btn-sign-out, .btn-cancel { display: inline-flex; align-items: center; justify-content: center; gap: 9px; border: 1px solid; border-radius: 13px; font-weight: 800; line-height: 1.2; transition: background .22s ease, border-color .22s ease, box-shadow .22s ease; }
+.btn-settings { color: #fff4d8; border-color: rgba(255,208,120,.55); background: linear-gradient(120deg, rgba(176,111,35,.68), rgba(124,72,23,.52)); box-shadow: inset 0 1px 0 rgba(255,255,255,.2); }
+.btn-settings:hover { border-color: #ffe0a6; background: rgba(176,111,35,.75); box-shadow: 0 0 0 2px rgba(255,208,120,.14); }
+.btn-settings svg { width: 17px; height: 17px; }
+.btn-sign-out { color: #fff0f1; border-color: rgba(255,116,127,.7); background: linear-gradient(120deg, rgba(208,52,72,.53), rgba(164,37,60,.42)); box-shadow: inset 0 1px 0 rgba(255,255,255,.12); }
+.btn-sign-out:hover { color: white; border-color: #ff8e98; background: linear-gradient(120deg, rgba(224,57,78,.73), rgba(182,41,66,.62)); box-shadow: 0 0 0 2px rgba(255,76,94,.15), inset 0 1px 0 rgba(255,255,255,.17); }
+.btn-sign-out svg { width: 17px; height: 17px; flex: none; }
+.btn-cancel { min-width: 170px; padding: 12px 20px; color: #ffd1d5; border-color: rgba(255,133,137,.45); background: rgba(255,76,94,.12); }
+.btn-cancel:hover:not(:disabled) { color: white; border-color: rgba(255,133,137,.8); background: rgba(255,76,94,.22); box-shadow: 0 0 0 2px rgba(255,76,94,.1); }
+.settings-dialog { width: min(100% - 28px, 490px); max-height: calc(100vh - 30px); margin: auto; padding: 0; overflow: auto; border: 1px solid rgba(237,222,255,.37); border-radius: 24px; color: #f7f8ff; background: #382451; box-shadow: 0 30px 85px rgba(8,3,26,.55); }
+.settings-dialog::backdrop { background: rgba(12,5,27,.7); backdrop-filter: blur(5px); }
+.settings-dialog[open] { animation: settings-modal-in .22s cubic-bezier(.22,1,.36,1) both; }
+.settings-dialog[open]::backdrop { animation: settings-backdrop-in .22s ease-out both; }
+.settings-dialog[open].is-closing { animation: settings-modal-out .2s ease-in both; }
+.settings-dialog[open].is-closing::backdrop { animation: settings-backdrop-out .2s ease-in both; }
+@keyframes settings-modal-in { from { opacity: 0; transform: translateY(12px) scale(.985); } to { opacity: 1; transform: translateY(0) scale(1); } }
+@keyframes settings-modal-out { from { opacity: 1; transform: translateY(0) scale(1); } to { opacity: 0; transform: translateY(9px) scale(.99); } }
+@keyframes settings-backdrop-in { from { opacity: 0; } to { opacity: 1; } }
+@keyframes settings-backdrop-out { from { opacity: 1; } to { opacity: 0; } }
+.settings-panel { padding: 28px; background: radial-gradient(circle at 100% 0%, rgba(255,208,120,.11), transparent 42%); }
+.settings-close { display: grid; place-items: center; width: 34px; height: 34px; border: 1px solid rgba(255,255,255,.2); border-radius: 10px; color: #fff; background: rgba(255,255,255,.07); font-size: 1.5rem; line-height: 1; }
+.settings-close:hover { background: rgba(255,255,255,.16); }
+.settings-input-wrap { position: relative; display: block; }
+.settings-input-wrap .field { padding-right: 95px; }
+.settings-input-wrap > span { position: absolute; top: 50%; right: 16px; transform: translateY(-50%); color: var(--muted); font-size: .82rem; font-weight: 700; pointer-events: none; }
+.quiz-template-code { overflow: auto; padding: 20px; border: 1px solid rgba(237,222,255,.19); border-radius: 17px; color: #e4fff4; background: rgba(19,12,37,.65); font-size: .82rem; line-height: 1.65; tab-size: 2; }
 .btn-primary svg, .btn-secondary svg, .btn-ghost svg { width: 18px; height: 18px; flex: none; }
 
 .field { width: 100%; border: 1px solid rgba(229,205,255,.29); border-radius: 14px; padding: 13px 15px; color: #f8f9ff; background: rgba(32,19,58,.55); outline: none; transition: border-color .2s ease, box-shadow .2s ease, background .2s ease; }

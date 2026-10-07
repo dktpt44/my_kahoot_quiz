@@ -29,12 +29,19 @@ Each quiz file needs:
 - A nonempty `questions` array. Each question has a `body` and 2–4 `choices`.
 - Each choice has a `body` and `is_correct` boolean. Exactly one choice per question must be correct.
 
-Use an existing JSON file in `data` as a template. Refresh the dashboard after adding or editing quizzes; no rebuild or server restart is needed for data changes.
+Open **Instructions** on the dashboard for a copyable two-question JSON template. Refresh Home after adding or editing quizzes; no rebuild or server restart is needed for data changes.
+
+## Quiz settings
+
+- Select **Settings** in the admin navigation to set the choice reveal delay (0–20 seconds, default 5) and answer time (10–100 seconds, default 20).
+- Select **Save settings** to persist them in `.quiz-settings.json`. This local file is ignored by Git.
+- Changes apply to newly hosted rooms. A room keeps the timing it had when it was created.
 
 ## Host a game
 
 - Sign in, choose a category and quiz, then select **Host this quiz**.
 - Share the four-digit room code, player link, or QR code. Players do not need an admin password.
+- **Cancel quiz** in the waiting room ends that room and tells joined players to scan a new QR code.
 - Reveal answers to see the vote distribution. **Return to home** after the results closes the room and frees its code.
 
 ## Network, security, and sessions

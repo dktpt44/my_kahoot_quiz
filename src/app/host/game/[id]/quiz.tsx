@@ -1,4 +1,3 @@
-import { QUESTION_ANSWER_TIME, TIME_TIL_CHOICE_REVEAL } from '@/constants'
 import { CountdownRing } from '@/components/countdown'
 import { ArrowIcon, Delay, ProgressBar, StatPill } from '@/components/ui'
 import type { HostGameView } from '@/types/game'
@@ -8,8 +7,8 @@ const symbols = ['◆', '●', '▲', '■']
 export default function Quiz({ view, onAction }: { view: HostGameView; onAction: (action: string) => void }) {
   const question = view.question!
   const elapsed = view.serverNow - (view.questionStartedAt ?? view.serverNow)
-  const choicesVisible = elapsed >= TIME_TIL_CHOICE_REVEAL || view.isAnswerRevealed
-  const secondsLeft = Math.max(0, Math.ceil((TIME_TIL_CHOICE_REVEAL + QUESTION_ANSWER_TIME - elapsed) / 1000))
+  const choicesVisible = elapsed >= view.choiceRevealMs || view.isAnswerRevealed
+  const secondsLeft = Math.max(0, Math.ceil((view.choiceRevealMs + view.answerTimeMs - elapsed) / 1000))
   const answerPercent = view.participants.length ? view.answers.length / view.participants.length * 100 : 0
   const questionPercent = (view.questionIndex + 1) / view.questionCount * 100
   const choiceCounts = new Map<string, number>()
@@ -76,7 +75,7 @@ export default function Quiz({ view, onAction }: { view: HostGameView; onAction:
         <aside className="glass p-6 sm:p-7" aria-label="Question status">
           <p className="eyebrow">Round pulse</p>
           <div className="mt-7 flex justify-center">
-            <CountdownRing key={question.id} elapsedMs={elapsed} durationMs={TIME_TIL_CHOICE_REVEAL + QUESTION_ANSWER_TIME} paused={view.isAnswerRevealed}>
+            <CountdownRing key={question.id} elapsedMs={elapsed} durationMs={view.choiceRevealMs + view.answerTimeMs} paused={view.isAnswerRevealed}>
               <div className="text-center"><div className="text-4xl font-extrabold tabular-nums">{view.isAnswerRevealed ? '✓' : secondsLeft}</div><div className="text-muted text-xs font-bold uppercase tracking-widest">{view.isAnswerRevealed ? 'done' : 'seconds'}</div></div>
             </CountdownRing>
           </div>

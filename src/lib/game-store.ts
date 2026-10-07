@@ -1,6 +1,6 @@
 import 'server-only'
 import { randomBytes, randomInt, randomUUID } from 'node:crypto'
-import { QUESTION_ANSWER_TIME, TIME_TIL_CHOICE_REVEAL } from '@/constants'
+import type { QuizSettings } from '@/lib/quiz-settings'
 import type { Answer, GamePhase, HostGameView, Participant, PlayerGameView, QuizSet } from '@/types/game'
 
 type Player = Participant & { token: string }
@@ -9,9 +9,12 @@ type StoredGame = {
   id: string
   revision: number
   lastAccessedAt: number
+  cancelledAt: number | null
   joinUrl: string | null
   hostToken: string
   quiz: QuizSet
+  choiceRevealMs: number
+  answerTimeMs: number
   phase: GamePhase
   questionIndex: number
   questionStartedAt: number | null
@@ -27,17 +30,24 @@ const globalGames = globalThis as typeof globalThis & { quizGames?: Map<string, 
 const games = globalGames.quizGames ??= new Map<string, StoredGame>()
 const token = () => randomBytes(32).toString('hex')
 const GAME_IDLE_TTL_MS = 6 * 60 * 60 * 1000
+const CANCELLED_TTL_MS = 10 * 60 * 1000
+
+function isExpired(game: StoredGame, now: number) {
+  return game.cancelledAt != null
+    ? now - game.cancelledAt > CANCELLED_TTL_MS
+    : game.subscribers.size === 0 && now - game.lastAccessedAt > GAME_IDLE_TTL_MS
+}
 
 function ensureRealtimeState(game: StoredGame) {
   game.subscribers ??= new Set()
   game.revealTimer ??= null
 }
 
-export function createGame(quiz: QuizSet, origin: string | null) {
+export function createGame(quiz: QuizSet, origin: string | null, settings: QuizSettings) {
   const now = Date.now()
   for (const [id, game] of games) {
     ensureRealtimeState(game)
-    if (game.subscribers.size === 0 && now - game.lastAccessedAt > GAME_IDLE_TTL_MS) {
+    if (isExpired(game, now)) {
       clearRevealTimer(game)
       games.delete(id)
     }
@@ -54,8 +64,9 @@ export function createGame(quiz: QuizSet, origin: string | null) {
   if (!id) throw new Error('No game codes are available')
 
   const game: StoredGame = {
-    id, revision: 1, lastAccessedAt: now, joinUrl: origin ? `${origin}/game/${id}` : null,
-    hostToken: token(), quiz, phase: 'lobby',
+    id, revision: 1, lastAccessedAt: now, cancelledAt: null, joinUrl: origin ? `${origin}/game/${id}` : null,
+    hostToken: token(), quiz, choiceRevealMs: settings.choiceRevealSeconds * 1000,
+    answerTimeMs: settings.answerTimeSeconds * 1000, phase: 'lobby',
     questionIndex: 0, questionStartedAt: null, isAnswerRevealed: false,
     players: [], answers: [], answersByQuestion: new Map(),
     subscribers: new Set(), revealTimer: null,
@@ -69,12 +80,12 @@ export function getGame(id: string) {
   if (!game) return undefined
   ensureRealtimeState(game)
   const now = Date.now()
-  if (game.subscribers.size === 0 && now - game.lastAccessedAt > GAME_IDLE_TTL_MS) {
+  if (isExpired(game, now)) {
     clearRevealTimer(game)
     games.delete(id)
     return undefined
   }
-  game.lastAccessedAt = now
+  if (game.cancelledAt == null) game.lastAccessedAt = now
   updateTimedState(game)
   if (game.phase === 'quiz' && !game.isAnswerRevealed && !game.revealTimer) scheduleReveal(game)
   return game
@@ -107,7 +118,7 @@ function clearRevealTimer(game: StoredGame) {
 function scheduleReveal(game: StoredGame) {
   clearRevealTimer(game)
   const questionIndex = game.questionIndex
-  const revealAt = (game.questionStartedAt ?? Date.now()) + TIME_TIL_CHOICE_REVEAL + QUESTION_ANSWER_TIME
+  const revealAt = (game.questionStartedAt ?? Date.now()) + game.choiceRevealMs + game.answerTimeMs
   game.revealTimer = setTimeout(() => {
     game.revealTimer = null
     if (game.phase === 'quiz' && game.questionIndex === questionIndex) updateTimedState(game)
@@ -117,7 +128,7 @@ function scheduleReveal(game: StoredGame) {
 
 function updateTimedState(game: StoredGame) {
   if (game.phase === 'quiz' && !game.isAnswerRevealed && game.questionStartedAt !== null &&
-      Date.now() >= game.questionStartedAt + TIME_TIL_CHOICE_REVEAL + QUESTION_ANSWER_TIME) {
+      Date.now() >= game.questionStartedAt + game.choiceRevealMs + game.answerTimeMs) {
     game.isAnswerRevealed = true
     game.revision += 1
     clearRevealTimer(game)
@@ -136,8 +147,17 @@ export function closeGame(game: StoredGame) {
   games.delete(game.id)
 }
 
+export function cancelGame(game: StoredGame) {
+  if (game.phase !== 'lobby') throw new Error('Only a waiting room can be cancelled')
+  clearRevealTimer(game)
+  game.phase = 'cancelled'
+  game.cancelledAt = Date.now()
+  game.revision += 1
+  publishGame(game, 'all')
+}
+
 export function joinGame(game: StoredGame, nickname: string) {
-  if (game.phase !== 'lobby') throw new Error('This game has already started')
+  if (game.phase !== 'lobby') throw new Error(game.phase === 'cancelled' ? 'This quiz was cancelled' : 'This game has already started')
   const name = nickname.trim()
   if (!name || name.length > 20) throw new Error('Nickname must be 1 to 20 characters')
   if (game.players.some((player) => player.nickname.toLowerCase() === name.toLowerCase())) {
@@ -193,8 +213,8 @@ export function submitAnswer(game: StoredGame, player: Player, choiceId: string)
   if (game.phase !== 'quiz' || game.isAnswerRevealed || game.questionStartedAt === null) {
     throw new Error('This question is closed')
   }
-  const elapsed = Date.now() - game.questionStartedAt - TIME_TIL_CHOICE_REVEAL
-  if (elapsed < 0 || elapsed >= QUESTION_ANSWER_TIME) throw new Error('Choices are not open')
+  const elapsed = Date.now() - game.questionStartedAt - game.choiceRevealMs
+  if (elapsed < 0 || elapsed >= game.answerTimeMs) throw new Error('Choices are not open')
   const question = game.quiz.questions[game.questionIndex]
   const choice = question.choices.find((item) => item.id === choiceId)
   if (!choice) throw new Error('Invalid choice')
@@ -202,7 +222,7 @@ export function submitAnswer(game: StoredGame, player: Player, choiceId: string)
   if (questionAnswers?.has(player.id)) {
     throw new Error('You already answered this question')
   }
-  const score = choice.is_correct ? Math.max(0, 1000 - Math.round(elapsed / QUESTION_ANSWER_TIME * 1000)) : 0
+  const score = choice.is_correct ? Math.max(0, 1000 - Math.round(elapsed / game.answerTimeMs * 1000)) : 0
   const answer = { participantId: player.id, questionId: question.id, choiceId, score }
   game.answers.push(answer)
   if (!questionAnswers) {
@@ -227,6 +247,7 @@ export function playerView(game: StoredGame, player?: Player): PlayerGameView {
     serverNow: Date.now(),
     phase: game.phase, quizName: game.quiz.name, questionCount: game.quiz.questions.length,
     questionIndex: game.questionIndex, questionStartedAt: game.questionStartedAt,
+    choiceRevealMs: game.choiceRevealMs, answerTimeMs: game.answerTimeMs,
     isAnswerRevealed: game.isAnswerRevealed,
     question: question ? {
       id: question.id, order: question.order, body: question.body,
@@ -259,6 +280,7 @@ export function hostView(game: StoredGame): HostGameView {
     question: game.phase === 'quiz' ? currentQuestion : null,
     questionIndex: game.questionIndex,
     questionStartedAt: game.questionStartedAt, isAnswerRevealed: game.isAnswerRevealed,
+    choiceRevealMs: game.choiceRevealMs, answerTimeMs: game.answerTimeMs,
     participants: game.players.map(({ id, nickname }) => ({ id, nickname })),
     answers: [...(game.answersByQuestion.get(currentQuestion.id)?.values() ?? [])],
     results,
