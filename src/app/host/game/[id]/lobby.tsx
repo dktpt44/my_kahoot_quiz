@@ -28,17 +28,44 @@ export default function Lobby({ participants, gameId, quizName, defaultJoinUrl, 
   const linkInput = useRef<HTMLInputElement>(null)
   const qrUrl = canScan(joinUrl) ? joinUrl : ''
 
-  const copyLink = async () => {
+  const copySelectedLink = () => {
+    const input = linkInput.current
+    if (!input) return false
+
+    const previousFocus = document.activeElement instanceof HTMLElement ? document.activeElement : null
+    input.focus()
+    input.select()
     try {
-      await navigator.clipboard.writeText(joinUrl)
+      const copied = document.execCommand('copy')
+      if (copied) previousFocus?.focus()
+      return copied
+    } catch {
+      return false
+    }
+  }
+
+  const copyLink = async () => {
+    let didCopy = false
+    if (window.isSecureContext && navigator.clipboard?.writeText) {
+      try {
+        await navigator.clipboard.writeText(joinUrl)
+        didCopy = true
+      } catch {
+        didCopy = copySelectedLink()
+      }
+    } else {
+      didCopy = copySelectedLink()
+    }
+
+    if (didCopy) {
       setCopied(true)
       setCopyHint('')
       window.setTimeout(() => setCopied(false), 1800)
-    } catch {
+    } else {
       setCopied(false)
       linkInput.current?.focus()
       linkInput.current?.select()
-      setCopyHint('Select the link and copy it manually.')
+      setCopyHint('Clipboard access is blocked. Press Ctrl+C or Cmd+C to copy the selected link.')
     }
   }
 
@@ -92,10 +119,10 @@ export default function Lobby({ participants, gameId, quizName, defaultJoinUrl, 
           </div>
           <label className="mt-6 block">
             <span className="label">Player link</span>
-            <input ref={linkInput} className="field text-sm" value={joinUrl} onChange={(event) => setJoinUrl(event.target.value)} aria-label="Player join URL" />
+            <input ref={linkInput} className="field text-sm" value={joinUrl} onChange={(event) => { setJoinUrl(event.target.value); setCopied(false); setCopyHint('') }} aria-label="Player join URL" />
           </label>
           <p className="text-muted mt-2 text-xs">This uses your computer’s network address. Phones must be on the same network.</p>
-          <button className="btn-secondary mt-4 w-full" onClick={copyLink} disabled={!qrUrl}>{copied ? 'Copied!' : 'Copy join link'}</button>
+          <button className="btn-secondary mt-4 w-full" type="button" onClick={copyLink} disabled={!qrUrl} aria-live="polite">{copied ? 'Copied!' : 'Copy join link'}</button>
           {copyHint && <p role="status" className="text-muted mt-2 text-xs">{copyHint}</p>}
         </section>
       </Delay>

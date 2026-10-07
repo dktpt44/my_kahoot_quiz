@@ -1,7 +1,7 @@
-import { countQuizCategories, listQuizzes } from '@/lib/quizzes'
+import { listQuizCategories, listQuizzes } from '@/lib/quizzes'
 import DashboardClient from './dashboard-client'
 
 export default async function Dashboard() {
-  const [quizzes, categoryCount] = await Promise.all([listQuizzes(), countQuizCategories()])
-  return <DashboardClient quizzes={quizzes} categoryCount={categoryCount} />
+  const [quizzes, categories] = await Promise.all([listQuizzes(), listQuizCategories()])
+  return <DashboardClient quizzes={quizzes} categories={categories} />
 }

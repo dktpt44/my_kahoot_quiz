@@ -1,48 +1,51 @@
 # Quiz Game
 
-A multiplayer quiz game with quizzes stored in this repository. The host starts a game, shares its join link or QR code, and advances through questions. Players answer on their own devices and the host sees the leaderboard.
+Host multiplayer quizzes from JSON files in `data`. Players join by link or QR code, answer on their own devices, and see the final leaderboard.
 
-## Run a quiz locally
+## Installation and run
 
-Create a local password file before starting the app:
+Requires Node.js 20.9+ and npm.
 
-```sh
-cp .env.example .env.local
-```
+1. Install dependencies: `npm install`.
+2. Create a local environment file: `cp .env.example .env.local`.
+3. Set `QUIZ_ADMIN_PASSWORD` in `.env.local` to a long, private password. The file is ignored by Git.
+4. Build and start the server: `npm run build`, then `npm run start`.
+5. Open the printed `Visit: http://<ip>:<port>` link and sign in.
 
-Edit `.env.local` and set `QUIZ_ADMIN_PASSWORD` to a long, private password. The file is ignored by Git. Do not prefix the variable with `NEXT_PUBLIC_`; the password must stay on the server. Restart the server after changing it.
+- Use `npm run dev` while editing. Use the production build for hosting; it uses less CPU. Rebuild after code changes.
+- The terminal prints the visit link and application errors, but suppresses routine request logs.
+- In VS Code, Ctrl+click the visit link to open it in your browser. The included `.vscode/settings.json` keeps localhost links external too.
 
-```sh
-npm install
-npm run build
-npm run start
-```
+## Configure quizzes
 
-Open `http://localhost:3000` and enter the admin password. The dashboard shows the number of category folders in `data` and the number of configured quizzes. Only signed-in admins can open host pages or create games; players can still join with the room link or QR code without signing in. Use **Sign out** on the dashboard when finished. The admin session lasts seven days, and changing the password invalidates existing sessions.
+- Create a category folder inside `data`, then add one `.json` file per quiz: `data/<category>/<quiz>.json`.
+- Every folder is a category, including empty folders. Every JSON file is discovered automatically; no path list or config file is needed.
+- Each category gets a repeatable icon and color gradient based on its position in the sorted folder list.
+- Quiz IDs follow the path: `<category>/<quiz>`.
 
-Build again after changing code or quiz files. The production server uses much less CPU than the development compiler while hosting a session.
+Each quiz file needs:
 
-Use development mode only while editing:
+- `name` (string) and an optional `description` (string).
+- A nonempty `questions` array. Each question has a `body` and 2–4 `choices`.
+- Each choice has a `body` and `is_correct` boolean. Exactly one choice per question must be correct.
 
-```sh
-npm run dev
-```
+Use an existing JSON file in `data` as a template. Refresh the dashboard after adding or editing quizzes; no rebuild or server restart is needed for data changes.
 
-New games receive a four-digit room code. When you host through localhost, the QR link automatically uses the server's Wi-Fi or Ethernet IPv4 address so phones on the same network can join. If the server has multiple network interfaces and the chosen address is wrong, edit the player link in the lobby or set `QUIZ_JOIN_HOST` before starting the server, for example `QUIZ_JOIN_HOST=192.168.1.25 npm run start`. The QR code never uses localhost. Ensure the server port is reachable from players' devices.
+## Host a game
 
-The local HTTP setup is intended for a trusted network. Use HTTPS if the admin signs in over an untrusted network, because HTTP does not encrypt the password in transit.
+- Sign in, choose a category and quiz, then select **Host this quiz**.
+- Share the four-digit room code, player link, or QR code. Players do not need an admin password.
+- Reveal answers to see the vote distribution. **Return to home** after the results closes the room and frees its code.
 
-The `dev` and `start` scripts show one `Visit: http://<ip>:<port>` link after the server is ready and suppress routine request messages. Application errors still appear in the terminal. The IP follows the same LAN address preference as the QR link, and `QUIZ_JOIN_HOST` overrides it when set.
+## Network, security, and sessions
 
-In VS Code, Ctrl+click the full `http://...` link to open it in your system browser. This repository sets `workbench.browser.openLocalhostLinks` to `false` in `.vscode/settings.json`, so localhost links also open externally. You can set `workbench.externalBrowser` in VS Code if you want a particular browser instead of the system default.
-
-## Add quizzes
-
-Place one JSON file per quiz in `data/networks`, `data/os`, `data/aml`, or `data/cvpr`. Each folder counts as a category, including folders with no quizzes yet. Add each quiz's relative path to the `quizPaths` array in [config.js](config.js). Only listed files appear on the dashboard and count toward its quiz total. The quiz ID comes from its path, such as `networks/demo`.
-
-Use [data/networks/demo.json](data/networks/demo.json) as a template. Each file has a `name`, optional `description`, and a nonempty `questions` array. Each question has a `body` and two to four `choices`. Every choice has `body` and `is_correct`; exactly one choice per question must be correct. Restart the server after changing the config or quiz files.
-
-Live game state is held in the Next.js server process. Room updates are pushed over a server-sent stream; players still submit answers with POST requests. After each answer reveal, the host sees a chart of votes for every option. On the final results page, **Return to home** closes the room and frees its code. Run a single persistent server instance; restarting it ends active games. Rooms left open expire after six hours without a connected client or request. The host token is saved in the creating browser's local storage, so keep that browser for hosting. This setup is intended for local or single-server use, not a multi-instance or serverless deployment.
+- By default, hosting through localhost generates player links and QR codes with a LAN IPv4 address. Players must be on the same network, with the server port reachable.
+- If the selected address is wrong, edit the player link in the lobby or set `QUIZ_JOIN_HOST`, for example: `QUIZ_JOIN_HOST=192.168.1.25 npm run start`.
+- Use local HTTP only on a trusted network. Use HTTPS if the admin signs in over an untrusted network; HTTP does not encrypt the password.
+- Admin sessions last seven days. **Sign out** on the dashboard. Restarting after a password change invalidates existing sessions.
+- Keep `QUIZ_ADMIN_PASSWORD` on the server; do not use a `NEXT_PUBLIC_` prefix.
+- Run one persistent server instance. Games live in memory, so restarting ends them. Idle rooms expire after six hours without a connected client or request.
+- The host token stays in the browser that created the room; use that browser to host the game.
 
 ## Checks
 
