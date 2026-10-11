@@ -2,6 +2,7 @@ import { networkInterfaces } from 'node:os'
 
 // The QR code uses a LAN address when the host opens the app on localhost.
 // Next.js must allow that same address for dev assets and the HMR connection.
+// stuff
 const lanHosts = (() => {
   try {
     return Object.values(networkInterfaces())

@@ -1,6 +1,6 @@
 {
   "name": "CVPR Demo",
-  "type": "Easy",
+  "type": "Easy Quiz",
   "description": "Basic Hough line detection and HOG descriptors",
   "questions": [
     {

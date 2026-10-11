@@ -36,3 +36,9 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+mydata
+mydata/
+
+# generated quiz session results (student names and scores)
+/data/sessions/

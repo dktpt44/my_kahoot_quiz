@@ -1,4 +1,4 @@
-import { authenticatePlayer, cancelGame, closeGame, gameRevision, getGame, hostAction, hostView, isHost, joinGame, playerView, submitAnswer } from '@/lib/game-store'
+import { authenticatePlayer, cancelGame, closeGame, gameRevision, getGame, hostAction, hostView, isHost, joinGame, playerView, SessionArchiveError, submitAnswer } from '@/lib/game-store'
 
 export const dynamic = 'force-dynamic'
 
@@ -48,11 +48,11 @@ export async function POST(request: Request, { params }: Context) {
       if (!isHost(game, request.headers.get('x-host-token'))) {
         return Response.json({ error: 'Invalid host credentials' }, { status: 403 })
       }
-      hostAction(game, body.action)
+      await hostAction(game, body.action)
       return Response.json(hostView(game))
     }
     return Response.json({ error: 'Invalid action' }, { status: 400 })
   } catch (error) {
-    return Response.json({ error: error instanceof Error ? error.message : 'Invalid request' }, { status: 400 })
+    return Response.json({ error: error instanceof Error ? error.message : 'Invalid request' }, { status: error instanceof SessionArchiveError ? 500 : 400 })
   }
 }

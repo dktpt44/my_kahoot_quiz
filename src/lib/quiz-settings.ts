@@ -2,15 +2,22 @@ import 'server-only'
 import { randomUUID } from 'node:crypto'
 import { readFile, rename, rm, writeFile } from 'node:fs/promises'
 import path from 'node:path'
+import type { LeaderboardVisibility } from '@/types/game'
 
 export type QuizSettings = {
   choiceRevealSeconds: number
   answerTimeSeconds: number
+  leaderboardVisibility: LeaderboardVisibility
+  showDistribution: boolean
+  saveSession: boolean
 }
 
 export const DEFAULT_QUIZ_SETTINGS: QuizSettings = {
   choiceRevealSeconds: 5,
   answerTimeSeconds: 20,
+  leaderboardVisibility: 'all',
+  showDistribution: true,
+  saveSession: false,
 }
 
 const settingsPath = path.join(process.cwd(), '.quiz-settings.json')
@@ -19,14 +26,29 @@ export function parseQuizSettings(value: unknown): QuizSettings {
   if (typeof value !== 'object' || value === null || Array.isArray(value)) {
     throw new Error('Invalid quiz settings')
   }
-  const { choiceRevealSeconds, answerTimeSeconds } = value as Record<string, unknown>
+  const { choiceRevealSeconds, answerTimeSeconds, leaderboardVisibility = 'all', showDistribution = true, saveSession = false } = value as Record<string, unknown>
   if (!Number.isInteger(choiceRevealSeconds) || (choiceRevealSeconds as number) < 0 || (choiceRevealSeconds as number) > 20) {
     throw new Error('Choice reveal delay must be a whole number from 0 to 20 seconds')
   }
   if (!Number.isInteger(answerTimeSeconds) || (answerTimeSeconds as number) < 10 || (answerTimeSeconds as number) > 100) {
     throw new Error('Answer time must be a whole number from 10 to 100 seconds')
   }
-  return { choiceRevealSeconds: choiceRevealSeconds as number, answerTimeSeconds: answerTimeSeconds as number }
+  if (!['hide', 'top1', 'top3', 'top10', 'all'].includes(leaderboardVisibility as string)) {
+    throw new Error('Choose a valid leaderboard display option')
+  }
+  if (typeof showDistribution !== 'boolean') {
+    throw new Error('Choose whether to show the correct-answer distribution')
+  }
+  if (typeof saveSession !== 'boolean') {
+    throw new Error('Choose whether to save the session')
+  }
+  return {
+    choiceRevealSeconds: choiceRevealSeconds as number,
+    answerTimeSeconds: answerTimeSeconds as number,
+    leaderboardVisibility: leaderboardVisibility as LeaderboardVisibility,
+    showDistribution,
+    saveSession,
+  }
 }
 
 export async function getQuizSettings(): Promise<QuizSettings> {

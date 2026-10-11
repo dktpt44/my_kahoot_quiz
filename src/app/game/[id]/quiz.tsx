@@ -14,8 +14,7 @@ export default function Quiz({ view, selectedChoiceId, onAnswer }: {
   const choicesVisible = elapsed >= view.choiceRevealMs || view.isAnswerRevealed
   const secondsLeft = Math.max(0, Math.ceil((view.choiceRevealMs + view.answerTimeMs - elapsed) / 1000))
   const selected = question.choices.find((choice) => choice.id === selectedChoiceId)
-  const selectedIsCorrect = selected && 'is_correct' in selected && selected.is_correct
-  const correctChoice = view.isAnswerRevealed ? question.choices.find((choice) => 'is_correct' in choice && choice.is_correct) : null
+  const selectedIsCorrect = Boolean(selected && 'is_correct' in selected && selected.is_correct)
   const questionPercent = (view.questionIndex + 1) / view.questionCount * 100
 
   return <div className="container-game max-w-3xl pb-16" key={question.id}>
@@ -28,9 +27,9 @@ export default function Quiz({ view, selectedChoiceId, onAnswer }: {
     </div>
 
     <section className="glass px-6 py-8 animate-in sm:px-9 sm:py-10" aria-labelledby="question-title">
-      <span className="eyebrow">Select one answer</span>
+      <span className="eyebrow">{view.isAnswerRevealed ? 'Review the answer' : 'Select one answer'}</span>
       <h2 id="question-title" className="mt-4 text-3xl font-bold leading-snug tracking-tight sm:text-[2.5rem]">{question.body}</h2>
-      <div className="mt-7 flex items-center gap-3"><span className="text-muted whitespace-nowrap text-xs font-semibold">Time left</span><CountdownBar key={question.id} elapsedMs={elapsed} durationMs={view.choiceRevealMs + view.answerTimeMs} paused={view.isAnswerRevealed} /></div>
+      <div className="mt-7 flex items-center gap-3"><span className="text-muted whitespace-nowrap text-xs font-semibold">{view.isAnswerRevealed ? 'Answer revealed' : 'Time left'}</span><CountdownBar key={question.id} elapsedMs={elapsed} durationMs={view.choiceRevealMs + view.answerTimeMs} paused={view.isAnswerRevealed} /></div>
     </section>
 
     {!choicesVisible && !view.isAnswerRevealed && <div className="glass-soft mt-5 flex min-h-44 flex-col items-center justify-center text-center animate-in">
@@ -53,11 +52,24 @@ export default function Quiz({ view, selectedChoiceId, onAnswer }: {
       <p className="text-muted mt-2">You chose <strong className="text-white">{selected?.body}</strong>. Waiting for the reveal...</p>
     </div>}
 
-    {view.isAnswerRevealed && <div className={`glass mt-5 p-7 text-center animate-in sm:p-9 ${selectedIsCorrect ? 'reveal-success' : 'reveal-miss'}`} role="status">
-      <div className={`mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-2xl text-3xl font-bold ${selectedIsCorrect ? 'bg-[rgba(39,215,105,.2)] text-[#6cf2a0]' : 'bg-[rgba(255,58,70,.19)] text-[#ff8790]'}`} aria-hidden="true">{selectedIsCorrect ? '✓' : selectedChoiceId ? '×' : '–'}</div>
-      <h3 className="text-2xl font-extrabold">{selectedIsCorrect ? 'That’s right!' : selectedChoiceId ? 'Not this time.' : 'Time is up.'}</h3>
-      {correctChoice && <p className="text-muted mt-3">The correct answer was <strong className="text-white">{correctChoice.body}</strong>.</p>}
-      <p className="text-muted mt-2 text-sm">The host will move to the next question shortly.</p>
-    </div>}
+    {view.isAnswerRevealed && <>
+      <div className="mt-5 grid gap-3 sm:grid-cols-2" role="group" aria-label="Revealed answer choices">
+        {question.choices.map((choice, index) => {
+          const isCorrect = 'is_correct' in choice && choice.is_correct
+          const isSelectedWrong = choice.id === selectedChoiceId && !isCorrect
+          return <Delay key={choice.id} index={index}>
+            <div className={`choice-card choice-${index} ${isCorrect ? 'choice-correct' : isSelectedWrong ? 'choice-incorrect' : 'choice-dim'}`}>
+              <span className="choice-symbol" aria-hidden="true">{symbols[index]}</span>
+              <span className="min-w-0 flex-1 text-lg font-semibold sm:text-xl">{choice.body}</span>
+              {(isCorrect || isSelectedWrong) && <span className="ml-auto text-xl font-extrabold" role="img" aria-label={isCorrect ? 'Correct answer' : 'Your incorrect answer'}>{isCorrect ? '✓' : '×'}</span>}
+            </div>
+          </Delay>
+        })}
+      </div>
+      <div className={`answer-feedback mt-5 animate-in ${selectedIsCorrect ? 'answer-feedback-correct' : selectedChoiceId ? 'answer-feedback-incorrect' : 'answer-feedback-timeout'}`} role="status">
+        <span className="answer-feedback-icon" aria-hidden="true">{selectedIsCorrect ? '✓' : selectedChoiceId ? '×' : '–'}</span>
+        <div><strong className="block text-lg">{selectedIsCorrect ? 'Correct' : selectedChoiceId ? 'Incorrect' : 'Time is up'}</strong><p className="mt-1 text-sm font-medium opacity-80">The host will move to the next question shortly.</p></div>
+      </div>
+    </>}
   </div>
 }

@@ -5,6 +5,8 @@ import { networkInterfaces } from 'node:os'
 import readline from 'node:readline'
 
 const mode = process.argv[2]
+
+// The Next.js CLI expects "dev" or "start" as the first argument.
 if (mode !== 'dev' && mode !== 'start') {
   process.stderr.write('Expected "dev" or "start".\n')
   process.exit(1)

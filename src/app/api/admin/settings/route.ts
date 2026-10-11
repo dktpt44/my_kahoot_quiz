@@ -19,7 +19,7 @@ export async function PUT(request: Request) {
   try {
     return Response.json(await saveQuizSettings(body), { headers: { 'Cache-Control': 'no-store' } })
   } catch (error) {
-    if (error instanceof Error && /^(Invalid quiz settings|Choice reveal delay|Answer time)/.test(error.message)) {
+    if (error instanceof Error && /^(Invalid quiz settings|Choice reveal delay|Answer time|Choose a valid leaderboard|Choose whether to show|Choose whether to save)/.test(error.message)) {
       return Response.json({ error: error.message }, { status: 400 })
     }
     return Response.json({ error: 'Could not save quiz settings' }, { status: 500 })

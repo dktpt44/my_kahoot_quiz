@@ -4,7 +4,9 @@ export type QuizSet = { id: string; name: string; description: string; questions
 export type QuizSummary = Pick<QuizSet, 'id' | 'name' | 'description'> & { questionCount: number }
 export type Participant = { id: string; nickname: string }
 export type Answer = { participantId: string; questionId: string; choiceId: string; score: number }
-export type GameResult = Participant & { totalScore: number }
+export type GameResult = Participant & { totalScore: number; correctCount: number }
+export type PlayerResult = { totalScore: number; correctCount: number }
+export type LeaderboardVisibility = 'hide' | 'top1' | 'top3' | 'top10' | 'all'
 export type GamePhase = 'lobby' | 'quiz' | 'result' | 'cancelled' | 'expired'
 export type PlayerQuestion = Omit<Question, 'choices'> & { choices: Omit<Choice, 'is_correct'>[] | Choice[] }
 export type PlayerGameView = {
@@ -20,6 +22,7 @@ export type PlayerGameView = {
   isAnswerRevealed: boolean
   question: PlayerQuestion | null
   selectedChoiceId: string | null
+  result: PlayerResult | null
 }
 export type HostGameView = {
   revision: number
@@ -37,4 +40,7 @@ export type HostGameView = {
   participants: Participant[]
   answers: Answer[]
   results: GameResult[]
+  leaderboardVisibility: LeaderboardVisibility
+  showDistribution: boolean
+  correctDistribution: number[]
 }

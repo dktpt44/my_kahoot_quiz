@@ -34,12 +34,11 @@ export default function Quiz({ view, onAction }: { view: HostGameView; onAction:
         </Delay>
         <div className="grid gap-3 sm:grid-cols-2" key={question.id}>
           {choicesVisible ? question.choices.map((choice, index) => {
-            const count = choiceCounts.get(choice.id) ?? 0
             return <Delay key={choice.id} index={index + 2}>
               <div className={`choice-card choice-${index} ${view.isAnswerRevealed && choice.is_correct ? 'choice-correct' : ''} ${view.isAnswerRevealed && !choice.is_correct ? 'choice-dim' : ''}`}>
                 <span className="choice-symbol" aria-hidden="true">{symbols[index]}</span>
                 <span className="min-w-0 flex-1 text-lg font-semibold sm:text-xl">{choice.body}</span>
-                {view.isAnswerRevealed && <span className="ml-auto text-sm font-bold">{choice.is_correct ? '✓' : ''} {count}</span>}
+                {view.isAnswerRevealed && choice.is_correct && <span className="ml-auto text-lg font-bold" role="img" aria-label="Correct answer">✓</span>}
               </div>
             </Delay>
           }) : <div className="glass-soft col-span-full flex min-h-48 flex-col items-center justify-center text-center animate-in">
@@ -51,7 +50,7 @@ export default function Quiz({ view, onAction }: { view: HostGameView; onAction:
         {view.isAnswerRevealed && <section className="glass-soft distribution-card p-6 animate-in sm:p-8" aria-labelledby="distribution-title">
           <div className="mb-6 flex flex-wrap items-end justify-between gap-2">
             <div><p className="eyebrow">How everyone answered</p><h3 id="distribution-title" className="mt-2 text-xl font-bold">Answer distribution</h3></div>
-            <span className="text-muted text-sm">{view.answers.length} {view.answers.length === 1 ? 'response' : 'responses'}</span>
+            <span className="text-muted text-[0.95rem]">{view.answers.length} {view.answers.length === 1 ? 'response' : 'responses'}</span>
           </div>
           <div className="distribution-chart" style={{ gridTemplateColumns: `repeat(${question.choices.length}, minmax(0, 1fr))` }}>
             {question.choices.map((choice, index) => {
@@ -59,7 +58,7 @@ export default function Quiz({ view, onAction }: { view: HostGameView; onAction:
               return <div key={choice.id} className={`distribution-column choice-${index} ${choice.is_correct ? 'distribution-column-correct' : ''}`}>
                 <span className="sr-only">{choice.body}: {count} {count === 1 ? 'vote' : 'votes'}{choice.is_correct ? ', correct answer' : ''}</span>
                 <div className="distribution-plot" aria-hidden="true">
-                  <div className="distribution-bar-group" style={{ height: `${count / highestCount * 126}px` }}>
+                  <div className="distribution-bar-group" style={{ height: `${count / highestCount * 148}px` }}>
                     <strong className="distribution-value">{count}{choice.is_correct && <span className="distribution-check">✓</span>}</strong>
                     <span className="distribution-bar" />
                   </div>

@@ -1,7 +1,9 @@
 import 'server-only'
 import { randomBytes, randomInt, randomUUID } from 'node:crypto'
+import { mkdir, writeFile } from 'node:fs/promises'
+import path from 'node:path'
 import type { QuizSettings } from '@/lib/quiz-settings'
-import type { Answer, GamePhase, HostGameView, Participant, PlayerGameView, QuizSet } from '@/types/game'
+import type { Answer, GamePhase, GameResult, HostGameView, Participant, PlayerGameView, QuizSet } from '@/types/game'
 
 type Player = Participant & { token: string }
 type GameAudience = 'host' | 'all'
@@ -16,6 +18,11 @@ type StoredGame = {
   quiz: QuizSet
   choiceRevealMs: number
   answerTimeMs: number
+  leaderboardVisibility: QuizSettings['leaderboardVisibility']
+  showDistribution: boolean
+  saveSession: boolean
+  finalResults: GameResult[] | null
+  completionPromise: Promise<void> | null
   phase: GamePhase
   questionIndex: number
   questionStartedAt: number | null
@@ -44,6 +51,12 @@ function ensureRealtimeState(game: StoredGame) {
   game.expiryTimer ??= null
   game.closedAt ??= null
   game.expiresAt ??= game.lastAccessedAt + GAME_MAX_AGE_MS
+  game.leaderboardVisibility ??= 'all'
+  game.showDistribution ??= true
+  // Rooms created before this setting was added always archived results.
+  game.saveSession ??= true
+  game.finalResults ??= null
+  game.completionPromise ??= null
 }
 
 function clearExpiryTimer(game: StoredGame) {
@@ -112,7 +125,9 @@ export function createGame(quiz: QuizSet, origin: string | null, settings: QuizS
     id, revision: 1, lastAccessedAt: now, closedAt: null, expiresAt: now + GAME_MAX_AGE_MS,
     joinUrl: origin ? `${origin}/game/${id}` : null,
     hostToken: token(), quiz: shuffledQuiz(quiz), choiceRevealMs: settings.choiceRevealSeconds * 1000,
-    answerTimeMs: settings.answerTimeSeconds * 1000, phase: 'lobby',
+    answerTimeMs: settings.answerTimeSeconds * 1000, leaderboardVisibility: settings.leaderboardVisibility,
+    showDistribution: settings.showDistribution, saveSession: settings.saveSession,
+    finalResults: null, completionPromise: null, phase: 'lobby',
     questionIndex: 0, questionStartedAt: null, isAnswerRevealed: false,
     players: [], answers: [], answersByQuestion: new Map(),
     subscribers: new Set(), revealTimer: null, expiryTimer: null,
@@ -229,7 +244,67 @@ export function authenticatePlayer(game: StoredGame, id: string | null, playerTo
   return game.players.find((player) => player.id === id && player.token === playerToken)
 }
 
-export function hostAction(game: StoredGame, action: string) {
+function gameResults(game: StoredGame): GameResult[] {
+  if (game.finalResults) return game.finalResults
+  const totals = new Map(game.players.map((player) => [player.id, { points: 0, correct: 0 }]))
+  const questions = new Map(game.quiz.questions.map((question) => [question.id, question]))
+  for (const answer of game.answers) {
+    const total = totals.get(answer.participantId)
+    if (!total) continue
+    total.points += answer.score
+    const choice = questions.get(answer.questionId)?.choices.find((item) => item.id === answer.choiceId)
+    if (choice?.is_correct) total.correct += 1
+  }
+  game.finalResults = game.players.map(({ id, nickname }) => ({
+    id, nickname, totalScore: totals.get(id)?.points ?? 0, correctCount: totals.get(id)?.correct ?? 0,
+  })).sort((a, b) => b.totalScore - a.totalScore || b.correctCount - a.correctCount || a.nickname.localeCompare(b.nickname))
+  return game.finalResults
+}
+
+function safePathSegment(value: string): string {
+  const segment = value.trim().replace(/[<>:"/\\|?*\x00-\x1f]/g, '_').replace(/[. ]+$/g, '')
+  return segment && segment !== '..' ? segment : 'Untitled'
+}
+
+function singleLine(value: string): string {
+  return value.replace(/[\r\n\t]+/g, ' ').trim()
+}
+
+async function archiveResults(game: StoredGame): Promise<void> {
+  const category = safePathSegment(game.quiz.id.split('/')[0] || 'Uncategorized')
+  const directory = path.join(process.cwd(), 'data', 'sessions', category, safePathSegment(game.quiz.name))
+  const completedAt = new Date()
+  const timestamp = completedAt.toISOString().replace(/:/g, '-')
+  const questionCount = game.quiz.questions.length
+  const rows = gameResults(game).map((result, index) =>
+    `${index + 1}. ${singleLine(result.nickname)} | ${result.totalScore} points | ${result.correctCount}/${questionCount} correct`)
+  const contents = [
+    `Quiz: ${singleLine(game.quiz.name)}`,
+    `Category: ${singleLine(category)}`,
+    `Completed: ${completedAt.toISOString()}`,
+    `Questions: ${questionCount}`,
+    '',
+    'Leaderboard (highest points first)',
+    ...rows,
+    ...(rows.length ? [] : ['No participants joined.']),
+    '',
+  ].join('\n')
+  await mkdir(directory, { recursive: true })
+  try {
+    await writeFile(path.join(directory, `${timestamp}.txt`), contents, { flag: 'wx', mode: 0o600 })
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code !== 'EEXIST') throw error
+    await writeFile(path.join(directory, `${timestamp}-${game.id}-${randomUUID().slice(0, 8)}.txt`), contents, { flag: 'wx', mode: 0o600 })
+  }
+}
+
+export class SessionArchiveError extends Error {}
+
+function currentGamePhase(game: StoredGame): GamePhase {
+  return game.phase
+}
+
+export async function hostAction(game: StoredGame, action: string) {
   expireGameIfDue(game)
   updateTimedState(game)
   if (action === 'start' && game.phase === 'lobby') {
@@ -249,6 +324,18 @@ export function hostAction(game: StoredGame, action: string) {
   }
   if (action === 'next' && game.phase === 'quiz' && game.isAnswerRevealed) {
     if (game.questionIndex + 1 === game.quiz.questions.length) {
+      if (game.saveSession) {
+        if (!game.completionPromise) {
+          game.completionPromise = archiveResults(game).catch(() => {
+            game.completionPromise = null
+            throw new SessionArchiveError('Could not save the leaderboard. Check server storage and try again.')
+          })
+        }
+        await game.completionPromise
+      }
+      const currentPhase = currentGamePhase(game)
+      if (currentPhase === 'result') return
+      if (currentPhase !== 'quiz') throw new Error('This room has closed')
       game.phase = 'result'
     } else {
       game.questionIndex += 1
@@ -299,6 +386,8 @@ export function submitAnswer(game: StoredGame, player: Player, choiceId: string)
 
 export function playerView(game: StoredGame, player?: Player): PlayerGameView {
   const question = game.phase === 'quiz' ? game.quiz.questions[game.questionIndex] : null
+  const results = game.phase === 'result' && player ? gameResults(game) : null
+  const playerResult = results?.find((result) => result.id === player?.id) ?? null
   return {
     revision: game.revision,
     serverNow: Date.now(),
@@ -314,20 +403,28 @@ export function playerView(game: StoredGame, player?: Player): PlayerGameView {
     selectedChoiceId: player && question
       ? game.answersByQuestion.get(question.id)?.get(player.id)?.choiceId ?? null
       : null,
+    result: playerResult ? {
+      totalScore: playerResult.totalScore,
+      correctCount: playerResult.correctCount,
+    } : null,
   }
 }
 
 export function hostView(game: StoredGame): HostGameView {
   const currentQuestion = game.quiz.questions[game.questionIndex]
   let results: HostGameView['results'] = []
+  let correctDistribution: number[] = []
   if (game.phase === 'result') {
-    const scores = new Map(game.players.map((player) => [player.id, 0]))
-    for (const answer of game.answers) {
-      scores.set(answer.participantId, (scores.get(answer.participantId) ?? 0) + answer.score)
+    const allResults = gameResults(game)
+    const limit = game.leaderboardVisibility === 'hide' ? 0
+      : game.leaderboardVisibility === 'top1' ? 1
+        : game.leaderboardVisibility === 'top3' ? 3
+          : game.leaderboardVisibility === 'top10' ? 10 : allResults.length
+    results = allResults.slice(0, limit)
+    if (game.showDistribution) {
+      correctDistribution = Array(game.quiz.questions.length + 1).fill(0) as number[]
+      for (const result of allResults) correctDistribution[result.correctCount] += 1
     }
-    results = game.players.map(({ id, nickname }) => ({
-      id, nickname, totalScore: scores.get(id) ?? 0,
-    })).sort((a, b) => b.totalScore - a.totalScore)
   }
   return {
     revision: game.revision,
@@ -338,8 +435,12 @@ export function hostView(game: StoredGame): HostGameView {
     questionIndex: game.questionIndex,
     questionStartedAt: game.questionStartedAt, isAnswerRevealed: game.isAnswerRevealed,
     choiceRevealMs: game.choiceRevealMs, answerTimeMs: game.answerTimeMs,
-    participants: game.players.map(({ id, nickname }) => ({ id, nickname })),
-    answers: [...(game.answersByQuestion.get(currentQuestion.id)?.values() ?? [])],
+    participants: game.phase === 'result' && game.leaderboardVisibility === 'hide'
+      ? [] : game.players.map(({ id, nickname }) => ({ id, nickname })),
+    answers: game.phase === 'result' ? [] : [...(game.answersByQuestion.get(currentQuestion.id)?.values() ?? [])],
     results,
+    leaderboardVisibility: game.leaderboardVisibility,
+    showDistribution: game.showDistribution,
+    correctDistribution,
   }
 }

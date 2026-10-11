@@ -11,7 +11,7 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 
 export async function listQuizCategories(): Promise<string[]> {
   const entries = await readdir(dataDirectory, { withFileTypes: true })
-  return entries.filter((entry) => entry.isDirectory()).map((entry) => entry.name).sort()
+  return entries.filter((entry) => entry.isDirectory() && entry.name !== 'sessions').map((entry) => entry.name).sort()
 }
 
 export async function loadQuizzes(): Promise<QuizSet[]> {
