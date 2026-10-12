@@ -34,13 +34,11 @@ export default function Quiz({ view, onAction }: { view: HostGameView; onAction:
         </Delay>
         <div className="grid gap-3 sm:grid-cols-2" key={question.id}>
           {choicesVisible ? question.choices.map((choice, index) => {
-            return <Delay key={choice.id} index={index + 2}>
-              <div className={`choice-card choice-${index} ${view.isAnswerRevealed && choice.is_correct ? 'choice-correct' : ''} ${view.isAnswerRevealed && !choice.is_correct ? 'choice-dim' : ''}`}>
+            return <div key={choice.id} className={`choice-card choice-${index} animate-in ${view.isAnswerRevealed && choice.is_correct ? 'choice-correct' : ''} ${view.isAnswerRevealed && !choice.is_correct ? 'choice-dim' : ''}`} style={{ animationDelay: `${(index + 2) * 80}ms` }}>
                 <span className="choice-symbol" aria-hidden="true">{symbols[index]}</span>
                 <span className="min-w-0 flex-1 text-lg font-semibold sm:text-xl">{choice.body}</span>
                 {view.isAnswerRevealed && choice.is_correct && <span className="ml-auto text-lg font-bold" role="img" aria-label="Correct answer">✓</span>}
               </div>
-            </Delay>
           }) : <div className="glass-soft col-span-full flex min-h-48 flex-col items-center justify-center text-center animate-in">
             <div className="flex gap-2 mb-5"><span className="loading-dot" /><span className="loading-dot" /><span className="loading-dot" /></div>
             <p className="font-semibold">Choices are on their way</p>

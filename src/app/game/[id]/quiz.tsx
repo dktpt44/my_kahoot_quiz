@@ -1,5 +1,5 @@
 import { CountdownBar } from '@/components/countdown'
-import { Delay, ProgressBar, StatPill } from '@/components/ui'
+import { ProgressBar, StatPill } from '@/components/ui'
 import type { PlayerGameView } from '@/types/game'
 
 const symbols = ['◆', '●', '▲', '■']
@@ -38,12 +38,12 @@ export default function Quiz({ view, selectedChoiceId, onAnswer }: {
     </div>}
 
     {choicesVisible && !view.isAnswerRevealed && !selectedChoiceId && <div className="mt-5 grid gap-3 sm:grid-cols-2">
-      {question.choices.map((choice, index) => <Delay key={choice.id} index={index}>
-        <button className={`choice-card choice-${index}`} onClick={() => onAnswer(choice.id)}>
+      {question.choices.map((choice, index) =>
+        <button key={choice.id} className={`choice-card choice-${index} animate-in`} style={{ animationDelay: `${index * 80}ms` }} onClick={() => onAnswer(choice.id)}>
           <span className="choice-symbol" aria-hidden="true">{symbols[index]}</span>
           <span className="text-lg font-semibold sm:text-xl">{choice.body}</span>
         </button>
-      </Delay>)}
+      )}
     </div>}
 
     {!view.isAnswerRevealed && selectedChoiceId && <div className="glass mt-5 p-6 text-center animate-in sm:p-8">
@@ -57,13 +57,11 @@ export default function Quiz({ view, selectedChoiceId, onAnswer }: {
         {question.choices.map((choice, index) => {
           const isCorrect = 'is_correct' in choice && choice.is_correct
           const isSelectedWrong = choice.id === selectedChoiceId && !isCorrect
-          return <Delay key={choice.id} index={index}>
-            <div className={`choice-card choice-${index} ${isCorrect ? 'choice-correct' : isSelectedWrong ? 'choice-incorrect' : 'choice-dim'}`}>
+          return <div key={choice.id} className={`choice-card choice-${index} animate-in ${isCorrect ? 'choice-correct' : isSelectedWrong ? 'choice-incorrect' : 'choice-dim'}`} style={{ animationDelay: `${index * 80}ms` }}>
               <span className="choice-symbol" aria-hidden="true">{symbols[index]}</span>
               <span className="min-w-0 flex-1 text-lg font-semibold sm:text-xl">{choice.body}</span>
               {(isCorrect || isSelectedWrong) && <span className="ml-auto text-xl font-extrabold" role="img" aria-label={isCorrect ? 'Correct answer' : 'Your incorrect answer'}>{isCorrect ? '✓' : '×'}</span>}
             </div>
-          </Delay>
         })}
       </div>
       <div className={`answer-feedback mt-5 animate-in ${selectedIsCorrect ? 'answer-feedback-correct' : selectedChoiceId ? 'answer-feedback-incorrect' : 'answer-feedback-timeout'}`} role="status">
