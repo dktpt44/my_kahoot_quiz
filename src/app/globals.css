@@ -209,7 +209,7 @@ a { text-decoration: none; }
 button.choice-card:hover:not(:disabled) { border-color: rgba(var(--choice-rgb), .9); box-shadow: inset 0 0 0 1px rgba(var(--choice-rgb), .18), 0 8px 22px rgba(8,3,26,.14), 0 0 18px rgba(var(--choice-rgb), .18); }
 button.choice-card:active:not(:disabled) { filter: brightness(.96); }
 .choice-card:disabled { opacity: 1; }
-.choice-card.choice-dim { opacity: .48; }
+.choice-card.choice-dim { filter: brightness(.65) saturate(.8); }
 .choice-card.choice-selected { border-color: rgba(var(--choice-rgb), .8); box-shadow: 0 0 0 1px rgba(var(--choice-rgb), .32) inset, 0 0 26px rgba(var(--choice-rgb), .15); }
 .choice-symbol { flex: none; display: grid; place-items: center; width: 48px; height: 48px; border-radius: 14px; color: #fff; background: rgb(var(--choice-rgb)); border: 1px solid rgba(255,255,255,.35); box-shadow: inset 0 1px 0 rgba(255,255,255,.32), 0 5px 14px rgba(0,0,0,.17); font-size: 1.5rem; font-weight: 800; }
 .choice-0 { --choice-rgb: 68, 153, 246; }

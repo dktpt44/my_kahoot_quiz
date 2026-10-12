@@ -77,7 +77,7 @@ export default function Quiz({ view, onAction }: { view: HostGameView; onAction:
             </CountdownRing>
           </div>
           <div className="rule my-7" />
-          <div className="flex items-end justify-between"><span className="text-muted text-sm">Answers in</span><strong className="text-2xl tabular-nums">{view.answers.length}<span className="text-muted text-base">/{view.participants.length}</span></strong></div>
+          <div className="flex items-end justify-between"><span className="text-muted text-sm">Answers</span><strong className="text-2xl tabular-nums">{view.answers.length}<span className="text-muted text-base">/{view.participants.length}</span></strong></div>
           <ProgressBar className="mt-3" value={answerPercent} />
           <p className="text-muted mt-3 text-xs">{view.isAnswerRevealed ? 'Ready for the next question.' : 'Updates live as players respond.'}</p>
           <div className="rule my-7" />
